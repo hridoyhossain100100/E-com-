@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 5000;
 // Rate Limiting
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: { message: 'Too many requests, please try again later.' } });
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { message: 'Too many login attempts.' } });
-const orderLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { message: 'Too many orders, slow down.' } });
 
 // Middleware
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
