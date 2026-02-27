@@ -6,7 +6,7 @@ import {
     Upload, Package, Trash2, CheckCircle, AlertCircle, ImagePlus, Loader2,
     Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X, Copy,
     DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
-    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star
+    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star, Users
 } from "lucide-react";
 import Image from "next/image";
 
@@ -120,8 +120,27 @@ export default function AdminPage() {
     const [sShowDeliveryZone, setSShowDeliveryZone] = useState(true);
     const [sFeatures, setSFeatures] = useState({ trackOrder: true, productReviews: true, relatedProducts: true });
 
+    // Live visitor counter
+    const [liveVisitors, setLiveVisitors] = useState(0);
+
     useEffect(() => { checkAuth(); }, []);
     useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); } }, [toast]);
+
+    useEffect(() => {
+        if (!isAuth) return;
+
+        const fetchVisitorCount = async () => {
+            try {
+                const r = await axios.get(`/api/visitors/count?t=${Date.now()}`);
+                setLiveVisitors(r.data.count);
+            } catch (err) { }
+        };
+
+        fetchVisitorCount();
+        const interval = setInterval(fetchVisitorCount, 30000); // Poll every 30s
+
+        return () => clearInterval(interval);
+    }, [isAuth]);
 
     const checkAuth = async () => {
         try { await axios.get(`/api/admin/check`); setIsAuth(true); loadAll(); }
@@ -396,8 +415,20 @@ export default function AdminPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 mb-3">
-                        <Package className="w-4 h-4 text-violet-400" /><span className="text-sm text-violet-300">Admin Panel</span>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
+                            <Package className="w-4 h-4 text-violet-400" /><span className="text-sm text-violet-300">Admin Panel</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20">
+                            <div className="relative flex items-center justify-center w-3 h-3">
+                                <span className="absolute inline-flex w-full h-full rounded-full bg-fuchsia-400 opacity-75 animate-ping"></span>
+                                <span className="relative inline-flex w-2 h-2 rounded-full bg-fuchsia-500"></span>
+                            </div>
+                            <span className="text-sm font-medium text-fuchsia-300">
+                                <Users className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
+                                Live Visitors: {liveVisitors}
+                            </span>
+                        </div>
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-bold gradient-text">Dashboard</h1>
                 </div>
