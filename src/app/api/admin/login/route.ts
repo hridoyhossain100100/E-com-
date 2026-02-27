@@ -4,8 +4,8 @@ import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
     try {
-        const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-        const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+        const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || 'admin123').trim();
+        const JWT_SECRET = (process.env.JWT_SECRET || 'fallback_secret').trim();
 
         const body = await req.json();
         const { password } = body;
