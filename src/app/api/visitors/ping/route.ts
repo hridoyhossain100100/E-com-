@@ -19,7 +19,7 @@ export async function POST(req: Request) {
         await Visitor.findOneAndUpdate(
             { sessionId },
             { lastSeen: new Date() },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         return NextResponse.json(
