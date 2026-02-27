@@ -13,7 +13,8 @@ const DEFAULTS: Record<string, any> = {
     categories: ['General'],
     banner: { text: '', enabled: false },
     storeName: 'ShopVibe',
-    marquee: { text: 'Welcome to ShopVibe!', enabled: true, speed: 50, bgColor: '#ff0000' }
+    marquee: { text: 'Welcome to ShopVibe!', enabled: true, speed: 50, bgColor: '#ff0000' },
+    marketing: { pixelId: '', gtmId: '', ga4Id: '' }
 };
 
 export async function GET() {

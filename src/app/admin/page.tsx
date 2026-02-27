@@ -6,7 +6,7 @@ import {
     Upload, Package, Trash2, CheckCircle, AlertCircle, ImagePlus, Loader2,
     Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X, Copy,
     DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
-    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings
+    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star
 } from "lucide-react";
 
 // Types
@@ -20,7 +20,7 @@ interface Coupon { _id: string; code: string; discountPercent: number; maxDiscou
 
 axios.defaults.withCredentials = true;
 
-type TabType = "overview" | "products" | "orders" | "coupons" | "settings";
+type TabType = "overview" | "products" | "orders" | "coupons" | "settings" | "reviews";
 const STATUS_COLORS: Record<string, string> = {
     pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
     confirmed: "text-blue-400 bg-blue-400/10 border-blue-400/20",
@@ -74,6 +74,7 @@ export default function AdminPage() {
     const [stats, setStats] = useState<Stats>({ totalOrders: 0, totalRevenue: 0, totalProducts: 0 });
     const [chartData, setChartData] = useState<DailyData[]>([]);
     const [coupons, setCoupons] = useState<Coupon[]>([]);
+    const [reviews, setReviews] = useState<any[]>([]);
 
     // Products form
     const [pName, setPName] = useState(""); const [pPrice, setPPrice] = useState(""); const [pDesc, setPDesc] = useState("");
@@ -112,9 +113,11 @@ export default function AdminPage() {
     const [sCategories, setSCategories] = useState<string[]>(['General']);
     const [sBanner, setSBanner] = useState({ text: '', enabled: false });
     const [sMarquee, setSMarquee] = useState({ text: '', enabled: false, speed: 12, bgColor: 'gradient' });
+    const [sMarketing, setSMarketing] = useState({ pixelId: '', gtmId: '', ga4Id: '' });
     const [sNewCat, setSNewCat] = useState('');
     const [sLoading, setSLoading] = useState(false);
     const [sShowDeliveryZone, setSShowDeliveryZone] = useState(true);
+    const [sFeatures, setSFeatures] = useState({ trackOrder: true, productReviews: true, relatedProducts: true });
 
     useEffect(() => { checkAuth(); }, []);
     useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); } }, [toast]);
@@ -125,7 +128,7 @@ export default function AdminPage() {
         finally { setAuthLoading(false); }
     };
 
-    const loadAll = () => { fetchProducts(); fetchOrders(); fetchStats(); fetchChart(); fetchCoupons(); fetchSettings(); };
+    const loadAll = () => { fetchProducts(); fetchOrders(); fetchStats(); fetchChart(); fetchCoupons(); fetchSettings(); fetchReviews(); };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault(); setLoading(true); setAuthErr("");
@@ -144,6 +147,7 @@ export default function AdminPage() {
     const fetchStats = async () => { try { const r = await axios.get(`/api/orders/stats`); setStats(r.data); } catch { } };
     const fetchChart = async () => { try { const r = await axios.get(`/api/orders/daily-revenue`); setChartData(r.data); } catch { } };
     const fetchCoupons = async () => { try { const r = await axios.get(`/api/coupons`); setCoupons(r.data); } catch { } };
+    const fetchReviews = async () => { try { const r = await axios.get(`/api/admin/reviews`); setReviews(r.data); } catch { } };
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -248,6 +252,18 @@ export default function AdminPage() {
     const deleteCoupon = async (id: string) => { try { await axios.delete(`/api/coupons/${id}`); showToast("success", "Deleted."); fetchCoupons(); } catch { } };
     const toggleCoupon = async (id: string) => { try { await axios.put(`/api/coupons/${id}/toggle`); fetchCoupons(); } catch { } };
 
+    // ─── Reviews ───
+    const deleteReview = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this review?")) return;
+        try {
+            await axios.delete(`/api/admin/reviews/${id}`);
+            showToast("success", "Review deleted.");
+            fetchReviews();
+        } catch {
+            showToast("error", "Failed to delete review.");
+        }
+    };
+
     // ─── Settings ───
     const fetchSettings = async () => {
         try {
@@ -256,7 +272,9 @@ export default function AdminPage() {
             if (r.data.categories) setSCategories(r.data.categories);
             if (r.data.banner) setSBanner(r.data.banner);
             if (r.data.marquee) setSMarquee(r.data.marquee);
+            if (r.data.marketing) setSMarketing(r.data.marketing);
             if (r.data.showDeliveryZone !== undefined) setSShowDeliveryZone(r.data.showDeliveryZone);
+            if (r.data.features) setSFeatures(r.data.features);
         } catch { }
     };
     const saveSetting = async (key: string, value: any) => {
@@ -394,6 +412,7 @@ export default function AdminPage() {
                     { id: "products" as TabType, label: "Products", icon: Package },
                     { id: "orders" as TabType, label: "Orders", icon: ShoppingCart, badge: newOrderCount },
                     { id: "coupons" as TabType, label: "Coupons", icon: Tag },
+                    { id: "reviews" as TabType, label: "Reviews", icon: Star },
                     { id: "settings" as TabType, label: "Settings", icon: Settings }
                 ]).map(t => (
                     <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "orders") setNewOrderCount(0); }}
@@ -599,6 +618,44 @@ export default function AdminPage() {
                 </div>
             )}
 
+            {/* ═══ REVIEWS ═══ */}
+            {tab === "reviews" && (
+                <div>
+                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400" /> Customer Reviews ({reviews.length})</h2>
+                    {reviews.length === 0 ? (
+                        <div className="glass-card p-16 text-center" style={{ transform: "none" }}>
+                            <Star className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+                            <p className="text-gray-500">No reviews found.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {reviews.map(r => (
+                                <div key={r._id} className="glass-card p-5 flex flex-col justify-between" style={{ transform: "none" }}>
+                                    <div>
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                                <h4 className="font-semibold text-white">{r.customerName}</h4>
+                                                <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="flex items-center gap-0.5 text-amber-400">
+                                                {[1, 2, 3, 4, 5].map(star => (
+                                                    <Star key={star} className={`w-3.5 h-3.5 ${star <= r.rating ? 'fill-current' : 'text-gray-700'}`} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-violet-400 font-mono mb-2 break-all pt-2 border-t border-white/5">Product ID: {r.productId}</div>
+                                        {r.comment && <p className="text-sm text-gray-300 line-clamp-4 leading-relaxed mt-2">{r.comment}</p>}
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-end">
+                                        <button onClick={() => deleteReview(r._id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete Review</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* ═══ SETTINGS ═══ */}
             {tab === "settings" && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -715,6 +772,69 @@ export default function AdminPage() {
                         )}
                         <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
                     </div>
+
+                    {/* Marketing & Tracking */}
+                    <div className="glass-card p-6 sm:p-8 lg:col-span-2" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-400" /> Marketing & Tracking IDs</h2>
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="text-sm text-gray-400 mb-1 block">Google Tag Manager (GTM) ID</label>
+                                <input type="text" value={sMarketing.gtmId} onChange={e => setSMarketing({ ...sMarketing, gtmId: e.target.value })} placeholder="e.g. GTM-XXXXXXX" className="input-field" />
+                                <p className="text-xs text-gray-500 mt-1">Leave empty to disable. Manages all other tags if configured correctly.</p>
+                            </div>
+                            <div>
+                                <label className="text-sm text-gray-400 mb-1 block">Meta Pixel (Facebook) ID</label>
+                                <input type="text" value={sMarketing.pixelId} onChange={e => setSMarketing({ ...sMarketing, pixelId: e.target.value })} placeholder="e.g. 123456789012345" className="input-field" />
+                                <p className="text-xs text-gray-500 mt-1">Leave empty to disable. Used for Facebook Ads tracking (Page View, Add To Cart, Purchase).</p>
+                            </div>
+                            <div>
+                                <label className="text-sm text-gray-400 mb-1 block">Google Analytics 4 (GA4) Measurement ID</label>
+                                <input type="text" value={sMarketing.ga4Id} onChange={e => setSMarketing({ ...sMarketing, ga4Id: e.target.value })} placeholder="e.g. G-XXXXXXXXXX" className="input-field" />
+                                <p className="text-xs text-gray-500 mt-1">Leave empty to disable. Note: If you use GTM to deploy GA4, you do not need to enter this here.</p>
+                            </div>
+                        </div>
+                        <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
+                    </div>
+
+                    {/* Feature Toggles */}
+                    <div className="glass-card p-6 sm:p-8 lg:col-span-2" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-fuchsia-400" /> Feature Toggles</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+
+                            <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-sm font-medium text-white mb-1">Track Order Page</h3>
+                                    <p className="text-xs text-gray-500 max-w-[200px]">Allow customers to search their order status publicly.</p>
+                                </div>
+                                <button onClick={() => setSFeatures({ ...sFeatures, trackOrder: !sFeatures.trackOrder })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.trackOrder ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.trackOrder ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                </button>
+                            </div>
+
+                            <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-sm font-medium text-white mb-1">Product Reviews</h3>
+                                    <p className="text-xs text-gray-500 max-w-[200px]">Enable the 5-star Customer Review & Comments system.</p>
+                                </div>
+                                <button onClick={() => setSFeatures({ ...sFeatures, productReviews: !sFeatures.productReviews })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.productReviews ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.productReviews ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                </button>
+                            </div>
+
+                            <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-sm font-medium text-white mb-1">Related Products</h3>
+                                    <p className="text-xs text-gray-500 max-w-[200px]">Show "You May Also Like" items at the bottom of products.</p>
+                                </div>
+                                <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                </button>
+                            </div>
+
+                        </div>
+                        <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features Setup</button>
+                    </div>
+
                 </div>
             )}
 

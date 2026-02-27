@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Sun, Moon, Heart, ShoppingCart } from "lucide-react";
+import { Sun, Moon, Heart, ShoppingCart, PackageSearch } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -49,6 +49,7 @@ export default function Navbar() {
                         </Link>
                         <div className="flex items-center gap-3 sm:gap-5">
                             <Link href="/" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors hidden sm:block">Shop</Link>
+                            <Link href="/track" className="text-sm font-medium text-[var(--text-muted)] hover:text-violet-500 transition-colors hidden sm:flex items-center gap-1"><PackageSearch className="w-4 h-4" /> Track Order</Link>
                             <Link href="/checkout" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors hidden sm:block">Checkout</Link>
                             <Link href="/checkout" className="relative text-[var(--text-muted)] hover:text-violet-500 transition-colors p-1">
                                 <ShoppingCart className="w-5 h-5" />
