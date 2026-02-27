@@ -36,6 +36,14 @@ export async function POST(req: Request) {
         if (!isAdmin) return unauthorizedResponse();
 
         await connectToDatabase();
+
+        // Configure Cloudinary inside handler to avoid module-load caching
+        cloudinary.config({
+            cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || '').trim(),
+            api_key: (process.env.CLOUDINARY_API_KEY || '').trim(),
+            api_secret: (process.env.CLOUDINARY_API_SECRET || '').trim(),
+        });
+
         const formData = await req.formData();
 
         const name = formData.get('name') as string;
