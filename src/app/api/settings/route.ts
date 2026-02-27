@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Settings from '@/models/Settings';
 
+export const dynamic = 'force-dynamic';
+
 const DEFAULTS: Record<string, any> = {
     shippingZones: [
         { id: 'dhaka', label: 'Inside Dhaka', cost: 60 },
