@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
-
 export async function POST(req: Request) {
     try {
+        const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+        const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+
         const body = await req.json();
         const { password } = body;
 
