@@ -5,8 +5,10 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ShoppingBag, Loader2, Heart, Share2, ZoomIn } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import ProductReviews from "../../components/ProductReviews";
 import RelatedProducts from "../../components/RelatedProducts";
+import { trackViewContent, trackAddToCart } from "@/lib/pixel";
 
 export interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; category: string; stock: number; variants: any[]; }
 
@@ -29,7 +31,12 @@ export default function ProductDetailsClient({ initialProduct, productId }: { in
         setInWish(wl.includes(productId));
 
         if (!initialProduct) {
-            axios.get(`/api/products/${productId}`).then(r => setProduct(r.data)).catch(() => { }).finally(() => setLoading(false));
+            axios.get(`/api/products/${productId}`).then(r => {
+                setProduct(r.data);
+                trackViewContent({ id: r.data._id, name: r.data.name, price: r.data.price, category: r.data.category });
+            }).catch(() => { }).finally(() => setLoading(false));
+        } else {
+            trackViewContent({ id: initialProduct._id, name: initialProduct.name, price: initialProduct.price, category: initialProduct.category });
         }
     }, [productId, initialProduct]);
 
@@ -88,8 +95,9 @@ export default function ProductDetailsClient({ initialProduct, productId }: { in
                             <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-[var(--card-bg)] border border-[var(--card-border)] cursor-zoom-in"
                                 onClick={() => setZoomed(!zoomed)} onMouseMove={handleZoomMove} onMouseLeave={() => setZoomed(false)}>
                                 {product.imageUrls?.length > 0 ? (
-                                    <img src={product.imageUrls[mainIdx]} alt={product.name}
-                                        className="w-full h-full object-cover transition-transform duration-300"
+                                    <Image src={product.imageUrls[mainIdx] || ""} alt={product.name} fill
+                                        className="object-cover transition-transform duration-300"
+                                        sizes="(max-width: 1024px) 100vw, 50vw"
                                         style={zoomed ? { transform: "scale(2.5)", transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` } : {}} />
                                 ) : <div className="w-full h-full flex items-center justify-center text-gray-600"><ShoppingBag className="w-16 h-16" /></div>}
                                 <div className="absolute top-3 right-3 flex gap-2">
@@ -104,7 +112,7 @@ export default function ProductDetailsClient({ initialProduct, productId }: { in
                                     {product.imageUrls.map((url, idx) => (
                                         <button key={idx} onClick={() => setMainIdx(idx)}
                                             className={`relative w-16 sm:w-24 aspect-[3/4] flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${mainIdx === idx ? "border-violet-500 scale-105" : "border-transparent opacity-60 hover:opacity-100"}`}>
-                                            <img src={url} alt="" className="w-full h-full object-cover" />
+                                            <Image src={url || ""} alt="" fill className="object-cover" sizes="(max-width: 640px) 64px, 96px" />
                                         </button>
                                     ))}
                                 </div>
@@ -146,10 +154,14 @@ export default function ProductDetailsClient({ initialProduct, productId }: { in
 
                             <div className="mt-auto">
                                 {(product.stock || 0) > 0 ? (
-                                    <Link href={`/checkout?product=${product._id}&name=${encodeURIComponent(product.name)}&price=${product.price}`}
+                                    <button
+                                        onClick={() => {
+                                            trackAddToCart({ id: product._id, name: product.name, price: product.price, category: product.category });
+                                            router.push(`/checkout?product=${product._id}&name=${encodeURIComponent(product.name)}&price=${product.price}`);
+                                        }}
                                         className="w-full btn-primary text-base sm:text-lg py-3 sm:py-4 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20">
                                         <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" /> Proceed to Checkout
-                                    </Link>
+                                    </button>
                                 ) : <div className="w-full py-4 text-center bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl text-[var(--text-muted)] font-medium">Out of Stock</div>}
                                 {(product.stock || 0) > 0 && <p className="text-center text-sm text-[var(--text-muted)] mt-3 flex items-center justify-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />{product.stock} in stock</p>}
                             </div>

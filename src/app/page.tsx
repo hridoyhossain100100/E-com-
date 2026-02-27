@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Link from "next/link";
+import Image from "next/image";
 import { Search, Heart, Share2, ShoppingBag, Sparkles, ArrowRight, Filter, X, Shield, Truck, CreditCard, ChevronUp, Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -145,8 +146,8 @@ export default function HomePage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {newArrivals.map(p => (
                 <Link key={p._id} href={`/product/${p._id}`} className="glass-card overflow-hidden group">
-                  <div className="relative overflow-hidden">
-                    <img src={p.imageUrls?.[0]} alt={p.name} className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="relative overflow-hidden w-full h-40 sm:h-48">
+                    <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 50vw, 25vw" />
                     <span className="absolute top-2 left-2 px-2 py-0.5 bg-fuchsia-500 text-white text-[10px] font-bold rounded-full uppercase">New</span>
                   </div>
                   <div className="p-3 sm:p-4">
@@ -176,9 +177,9 @@ export default function HomePage() {
           <div className={`grid gap-4 sm:gap-6 ${filtered.length === 1 ? "grid-cols-1 max-w-md mx-auto" : "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`}>
             {filtered.map((p, i) => (
               <div key={p._id} className="glass-card overflow-hidden group animate-fade-in-up" style={{ animationDelay: `${i * 0.05}s` }}>
-                <div className="relative overflow-hidden">
+                <div className="relative overflow-hidden w-full h-48 sm:h-56">
                   <Link href={`/product/${p._id}`}>
-                    <img src={p.imageUrls?.[0]} alt={p.name} className="w-full h-48 sm:h-56 object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw" />
                   </Link>
                   {/* Wishlist + Share buttons */}
                   <div className="absolute top-2 right-2 flex gap-1.5">

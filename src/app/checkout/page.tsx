@@ -3,7 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
+import Image from "next/image";
 import { CreditCard, Phone, Hash, CheckCircle, AlertCircle, Loader2, ShoppingCart, User, Tag, MapPin, Truck, Banknote, ShieldCheck, Plus, Minus, Trash2, ChevronRight } from "lucide-react";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/pixel";
 
 interface Product {
     _id: string;
@@ -80,6 +82,15 @@ function CheckoutForm() {
             ]);
         }
     }, [preSelectedProductId, preSelectedName, preSelectedPrice, preSelectedImage]);
+
+    // Track InitiateCheckout when products are populated
+    useEffect(() => {
+        if (selectedProducts.length > 0) {
+            const subtotal = selectedProducts.reduce((sum, p) => sum + p.price * p.quantity, 0);
+            const numItems = selectedProducts.reduce((sum, p) => sum + p.quantity, 0);
+            trackInitiateCheckout(subtotal, numItems);
+        }
+    }, [selectedProducts.length]);
 
     const fetchProducts = async () => {
         try {
@@ -160,7 +171,7 @@ function CheckoutForm() {
         setMessage(null);
 
         try {
-            await axios.post(`/api/orders`, {
+            const res = await axios.post(`/api/orders`, {
                 products: selectedProducts.map(p => ({ productId: p.productId, quantity: p.quantity })),
                 totalAmount,
                 customerName,
@@ -174,6 +185,9 @@ function CheckoutForm() {
                 shippingZone,
                 shippingCost,
             });
+
+            // Fire Meta Pixel Purchase event
+            trackPurchase(res.data.order._id || 'UNKNOWN_ORDER', totalAmount);
 
             setMessage({ type: "success", text: "🎉 Order Successful! We will contact you shortly." });
             setSelectedProducts([]);
@@ -365,7 +379,7 @@ function CheckoutForm() {
                                         <div key={p.productId} className="flex gap-4 group">
                                             <div className="w-16 h-16 rounded-lg bg-gray-800 border border-gray-700 overflow-hidden flex-shrink-0 relative">
                                                 {p.imageUrl ? (
-                                                    <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                                                    <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="64px" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-600"><ShoppingCart className="w-6 h-6" /></div>
                                                 )}
@@ -466,7 +480,7 @@ function CheckoutForm() {
                                     {availableProducts.map(p => (
                                         <div key={p._id} className="flex items-center justify-between p-2 rounded-lg bg-black/30 hover:bg-black/50 transition-colors">
                                             <div className="flex items-center gap-3 min-w-0 pr-2">
-                                                <img src={p.imageUrl} className="w-10 h-10 rounded border border-gray-800 object-cover flex-shrink-0" alt="" />
+                                                {p.imageUrl && <Image src={p.imageUrl} width={40} height={40} className="rounded border border-gray-800 object-cover flex-shrink-0" alt="" />}
                                                 <div className="min-w-0">
                                                     <h4 className="text-xs font-medium text-gray-200 truncate">{p.name}</h4>
                                                     <p className="text-xs text-gray-500 font-semibold">৳{p.price.toLocaleString()}</p>

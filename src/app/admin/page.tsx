@@ -8,6 +8,7 @@ import {
     DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
     ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star
 } from "lucide-react";
+import Image from "next/image";
 
 // Types
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
@@ -461,7 +462,11 @@ export default function AdminPage() {
                             <div><label className="text-sm text-gray-400 mb-1 block">Category</label><input type="text" value={pCat} onChange={e => setPCat(e.target.value)} placeholder="Electronics" className="input-field" /></div>
                             <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Short description..." rows={3} className="input-field resize-none" /></div>
                             {/* Drag & Drop */}
-                            <div><label className="text-sm text-gray-400 mb-1 block">Product Images</label>
+                            <div>
+                                <div className="flex items-baseline justify-between mb-1">
+                                    <label className="text-sm text-gray-400 block">Product Images</label>
+                                    <span className="text-xs text-violet-400/80">Recommended: 1080x1080 (1:1) for Meta Ads</span>
+                                </div>
                                 <div onClick={() => fileRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={onDrop}
                                     className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-violet-400 bg-violet-500/10" : "border-gray-700 hover:border-violet-500/50"}`}>
                                     {pPreviews.length > 0 ? <div className="grid grid-cols-3 gap-2">{pPreviews.map((p, i) => <img key={i} src={p} alt="" className="w-full h-24 object-cover rounded-lg" />)}</div>
@@ -498,7 +503,7 @@ export default function AdminPage() {
                                 {pagedProducts.map(p => (
                                     <div key={p._id} className={`glass-card flex items-center gap-3 p-3 ${selectedIds.has(p._id) ? "ring-1 ring-violet-500/50" : ""}`} style={{ transform: "none" }}>
                                         <input type="checkbox" checked={selectedIds.has(p._id)} onChange={() => toggleSelect(p._id)} className="accent-violet-500 flex-shrink-0" />
-                                        <img src={p.imageUrls?.[0] || ""} alt={p.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                        {p.imageUrls?.[0] && <Image src={p.imageUrls[0]} alt={p.name} width={48} height={48} className="rounded-lg object-cover flex-shrink-0" />}
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-medium truncate text-sm">{p.name}</h3>
                                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
