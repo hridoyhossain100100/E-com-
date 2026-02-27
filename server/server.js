@@ -3,10 +3,34 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Socket.IO Setup
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+let liveVisitors = 0;
+
+io.on('connection', (socket) => {
+  liveVisitors++;
+  io.emit('visitorCount', liveVisitors);
+
+  socket.on('disconnect', () => {
+    liveVisitors--;
+    io.emit('visitorCount', liveVisitors);
+  });
+});
 
 // Rate Limiting
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, message: { message: 'Too many requests, please try again later.' } });
@@ -123,4 +147,4 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
-app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });
+server.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });
