@@ -1067,7 +1067,16 @@ export default function AdminPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-400 mb-1.5">Total Weight (kg)</label>
-                                                <input type="number" step="0.1" min="0.1" value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="input-field" />
+                                                <select value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="input-field">
+                                                    <option value={0.2} className="bg-[#1a1225]">0-0.2</option>
+                                                    <option value={0.5} className="bg-[#1a1225]">0.2-0.5</option>
+                                                    <option value={1} className="bg-[#1a1225]">0.5-1</option>
+                                                    <option value={1.5} className="bg-[#1a1225]">1-1.5</option>
+                                                    <option value={2} className="bg-[#1a1225]">1.5-2</option>
+                                                    <option value={3} className="bg-[#1a1225]">2-3</option>
+                                                    <option value={4} className="bg-[#1a1225]">3-4</option>
+                                                    <option value={5} className="bg-[#1a1225]">4-5</option>
+                                                </select>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-400 mb-1.5">Quantity</label>
