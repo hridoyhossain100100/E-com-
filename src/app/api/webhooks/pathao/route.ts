@@ -13,7 +13,6 @@ export async function POST(req: Request) {
         console.log('[Pathao Webhook] Received event:', payload.event);
 
         // ─── 1. Verification Handshake ─────────────────────────────────────────
-        // Pathao sends this when you test/register the URL in their panel.
         if (payload.event === 'webhook_integration') {
             console.log('[Pathao Webhook] Handshake verified.');
             return new NextResponse(null, {
@@ -31,10 +30,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: 'Missing Signature' }, { status: 401 });
         }
 
-        // Usually, Pathao signatures are HMAC-SHA256 of the raw body using the secret.
-        // If Pathao's signature is just the secret itself (as some docs suggest for basic setups),
-        // you would compare signature === PATHAO_WEBHOOK_SECRET. 
-        // Assuming a standard HMAC comparison here, but falling back to direct match just in case:
         const calculatedSignature = crypto
             .createHmac('sha256', PATHAO_WEBHOOK_SECRET)
             .update(rawBody)
@@ -49,7 +44,6 @@ export async function POST(req: Request) {
         if (payload.event && payload.consignment_id) {
             await connectToDatabase();
 
-            // Find the Mongo order holding this consignment ID
             const order = await Order.findOne({ consignmentId: payload.consignment_id });
 
             if (!order) {
@@ -57,38 +51,43 @@ export async function POST(req: Request) {
                 return NextResponse.json({ message: 'Order not found, but acknowledged' }, { status: 200 });
             }
 
-            const eventName = payload.event.toLowerCase(); // e.g., 'order.in-transit', 'order.delivered'
+            const eventName = payload.event.toLowerCase();
             let newStatus = order.status;
+            let newPathaoStatus = order.pathaoStatus || 'Pickup_Pending';
 
-            // Map Pathao's detailed events back to your Mongoose Enum: ['pending', 'confirmed', 'shipped', 'delivered']
+            // Map Pathao events to internal status + granular pathaoStatus
             if (eventName === 'order.delivered' || eventName === 'order.partial-delivery') {
                 newStatus = 'delivered';
-                // Note: You might want to save payload.collected_amount if needed
+                newPathaoStatus = 'Delivered';
             }
-            else if (
-                eventName === 'order.in-transit' ||
-                eventName === 'order.assigned-for-delivery' ||
-                eventName === 'order.at-sorting-hub' ||
-                eventName === 'order.picked'
-            ) {
+            else if (eventName === 'order.assigned-for-delivery') {
                 newStatus = 'shipped';
+                newPathaoStatus = 'Out_For_Delivery';
+            }
+            else if (eventName === 'order.in-transit' || eventName === 'order.at-sorting-hub') {
+                newStatus = 'shipped';
+                newPathaoStatus = 'In_Transit';
+            }
+            else if (eventName === 'order.picked') {
+                newStatus = 'shipped';
+                newPathaoStatus = 'Picked';
             }
             else if (eventName === 'order.return' || eventName === 'order.delivery-failed') {
-                // Your enum doesn't have a 'failed' or 'returned' state yet, so we log it.
-                // Once you add it to the schema, you can set it here.
+                newPathaoStatus = 'Return';
                 console.log(`[Pathao Webhook] Order ${order.orderNumber} failed/returned. Needs manual review.`);
             }
 
-            if (newStatus !== order.status) {
+            if (newStatus !== order.status || newPathaoStatus !== order.pathaoStatus) {
                 order.status = newStatus;
+                order.pathaoStatus = newPathaoStatus;
                 await order.save();
-                console.log(`[Pathao Webhook] Order ${order.orderNumber} strictly synchronized to: ${newStatus}`);
+                console.log(`[Pathao Webhook] Order ${order.orderNumber} → status: ${newStatus}, pathaoStatus: ${newPathaoStatus}`);
             }
 
             return NextResponse.json({ message: 'Success' }, { status: 200 });
         }
 
-        // ─── 4. Unhandled Events (e.g., store.updated) ─────────────────────────
+        // ─── 4. Unhandled Events ───────────────────────────────────────────────
         return NextResponse.json({ message: 'Event ignored' }, { status: 200 });
 
     } catch (error: any) {

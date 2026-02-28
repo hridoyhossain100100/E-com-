@@ -70,6 +70,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    pathaoStatus: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         enum: ['pending', 'confirmed', 'shipped', 'delivered'],
