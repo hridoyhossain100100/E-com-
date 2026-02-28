@@ -6,22 +6,39 @@ import {
     Upload, Package, Trash2, CheckCircle, AlertCircle, ImagePlus, Loader2,
     Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X, Copy,
     DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
-    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star, Users
+    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star, Users,
+    Send, Truck, MapPin, PackageCheck, RefreshCw
 } from "lucide-react";
 import Image from "next/image";
+import { sendOrderToPathao } from '@/app/actions/pathaoIntegration';
+import type { DeliveryDetails } from '@/app/actions/pathaoIntegration';
 
 // Types
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
 interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; category: string; stock: number; variants: Variant[]; createdAt?: string; }
 interface OrderProduct { productId: string; name: string; price: number; quantity: number; }
-interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; bkashNumber: string; transactionId: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; }
+interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; bkashNumber: string; transactionId: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; consignmentId?: string; pathaoStatus?: string; }
 interface Stats { totalOrders: number; totalRevenue: number; totalProducts: number; }
 interface DailyData { date: string; label: string; revenue: number; count: number; }
 interface Coupon { _id: string; code: string; discountPercent: number; maxDiscount: number; usageLimit: number; usedCount: number; expiresAt: string | null; isActive: boolean; }
 
 axios.defaults.withCredentials = true;
 
-type TabType = "overview" | "products" | "orders" | "coupons" | "settings" | "reviews";
+type TabType = "overview" | "products" | "orders" | "coupons" | "settings" | "reviews" | "oms";
+
+// ─── Pathao Timeline Steps ───
+const TIMELINE_STEPS = [
+    { key: 'Pickup_Pending', label: 'Accepted', icon: CheckCircle },
+    { key: 'Picked', label: 'Picked', icon: PackageCheck },
+    { key: 'In_Transit', label: 'In Transit', icon: Truck },
+    { key: 'Out_For_Delivery', label: 'Out for Delivery', icon: MapPin },
+    { key: 'Delivered', label: 'Delivered', icon: Package },
+];
+function getTimelineIndex(pathaoStatus?: string): number {
+    if (!pathaoStatus) return 0;
+    const idx = TIMELINE_STEPS.findIndex(s => s.key === pathaoStatus);
+    return idx >= 0 ? idx : 0;
+}
 const STATUS_COLORS: Record<string, string> = {
     pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
     confirmed: "text-blue-400 bg-blue-400/10 border-blue-400/20",
@@ -106,6 +123,14 @@ export default function AdminPage() {
 
     // Notifications
     const [newOrderCount, setNewOrderCount] = useState(0);
+
+    // OMS State
+    const [omsOrders, setOmsOrders] = useState<any[]>([]);
+    const [omsLoading, setOmsLoading] = useState(false);
+    const [omsProcessingId, setOmsProcessingId] = useState<string | null>(null);
+    const [omsModalOrder, setOmsModalOrder] = useState<any | null>(null);
+    const [omsModalData, setOmsModalData] = useState<DeliveryDetails>({ itemWeight: 0.5, deliveryType: 48, specialInstruction: '', itemDescription: '', amountToCollect: 0, itemQuantity: 1 });
+    const [omsExpandedId, setOmsExpandedId] = useState<string | null>(null);
     const lastOrderCount = useRef(0);
 
     // Settings
@@ -445,7 +470,8 @@ export default function AdminPage() {
                     { id: "orders" as TabType, label: "Orders", icon: ShoppingCart, badge: newOrderCount },
                     { id: "coupons" as TabType, label: "Coupons", icon: Tag },
                     { id: "reviews" as TabType, label: "Reviews", icon: Star },
-                    { id: "settings" as TabType, label: "Settings", icon: Settings }
+                    { id: "settings" as TabType, label: "Settings", icon: Settings },
+                    { id: "oms" as TabType, label: "OMS", icon: Truck }
                 ]).map(t => (
                     <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "orders") setNewOrderCount(0); }}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all relative ${tab === t.id ? "bg-violet-600/30 text-violet-300 border border-violet-500/30" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
@@ -873,6 +899,207 @@ export default function AdminPage() {
 
                 </div>
             )}
+
+            {/* ═══ OMS (Order Management — Pathao) ═══ */}
+            {tab === "oms" && (() => {
+                // Fetch OMS orders on tab open
+                const fetchOmsOrders = async () => {
+                    setOmsLoading(true);
+                    try { const res = await fetch('/api/orders'); if (res.ok) { const data = await res.json(); setOmsOrders(data.orders || data); } } catch (err) { console.error(err); }
+                    finally { setOmsLoading(false); }
+                };
+                if (omsOrders.length === 0 && !omsLoading) fetchOmsOrders();
+
+                const openOmsModal = (order: any) => {
+                    const totalQty = order.products?.reduce((s: number, p: any) => s + (p.quantity || 1), 0) || 1;
+                    const desc = order.products?.map((p: any) => `${p.name} x${p.quantity}`).join(', ') || `Order #${order.orderNumber}`;
+                    const amount = order.paymentMethod === 'cod' ? order.totalAmount : 0;
+                    setOmsModalData({ itemWeight: 0.5, deliveryType: 48, specialInstruction: `Order #${order.orderNumber} | Payment: ${(order.paymentMethod || 'cod').toUpperCase()}`, itemDescription: desc, amountToCollect: amount, itemQuantity: totalQty });
+                    setOmsModalOrder(order);
+                };
+
+                const handleOmsSubmit = async () => {
+                    if (!omsModalOrder) return;
+                    setOmsProcessingId(omsModalOrder._id);
+                    setOmsModalOrder(null);
+                    try {
+                        const result = await sendOrderToPathao(omsModalOrder._id, omsModalData);
+                        if (result?.success) {
+                            showToast('success', `✅ Sent! CN: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
+                            setOmsOrders(prev => prev.map(o => o._id === omsModalOrder._id ? { ...o, status: 'confirmed', consignmentId: result.consignmentId, pathaoStatus: 'Pickup_Pending' } : o));
+                        } else { showToast('error', `❌ ${result?.error}`); }
+                    } catch (err: any) { showToast('error', `❌ ${err.message}`); }
+                    finally { setOmsProcessingId(null); }
+                };
+
+                const omsStatusStyles: Record<string, string> = {
+                    pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+                    confirmed: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+                    shipped: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+                    delivered: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+                };
+
+                return (
+                    <div className="space-y-6">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold flex items-center gap-2"><Truck className="w-5 h-5 text-violet-400" /> Pathao Courier — OMS</h2>
+                            <button onClick={() => { setOmsOrders([]); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-400">
+                                <RefreshCw className="w-4 h-4" /> Refresh
+                            </button>
+                        </div>
+
+                        {/* Table */}
+                        <div className="glass-card border border-white/5 overflow-hidden" style={{ transform: 'none' }}>
+                            <table className="w-full text-sm text-left">
+                                <thead className="border-b border-white/10">
+                                    <tr>
+                                        <th className="px-6 py-4 text-gray-400 font-medium">Order</th>
+                                        <th className="px-6 py-4 text-gray-400 font-medium">Customer</th>
+                                        <th className="px-6 py-4 text-gray-400 font-medium">Payment</th>
+                                        <th className="px-6 py-4 text-gray-400 font-medium">Status</th>
+                                        <th className="px-6 py-4 text-gray-400 font-medium">Amount</th>
+                                        <th className="px-6 py-4 text-gray-400 font-medium text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {omsLoading ? (
+                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /><p>Loading orders...</p></td></tr>
+                                    ) : omsOrders.length === 0 ? (
+                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
+                                    ) : (
+                                        omsOrders.map((order: any) => (
+                                            <tr key={order._id} className="hover:bg-white/[0.02] transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <span className="font-semibold text-white">#{order.orderNumber}</span>
+                                                    <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-white">{order.customerName}</div>
+                                                    <div className="text-xs text-gray-500">{order.customerPhone}</div>
+                                                </td>
+                                                <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
+                                                    {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
+                                                    {order.consignmentId && (
+                                                        <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
+                                                            {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    {!order.consignmentId ? (
+                                                        <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
+                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
+                                                            {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
+                                                        </button>
+                                                    ) : (
+                                                        <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
+                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
+                                                            Track Order
+                                                        </a>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Timeline Expansion */}
+                        {omsExpandedId && (() => {
+                            const order = omsOrders.find((o: any) => o._id === omsExpandedId);
+                            if (!order || !order.consignmentId) return null;
+                            const activeIdx = getTimelineIndex(order.pathaoStatus);
+                            return (
+                                <div className="glass-card p-6 border border-white/5" style={{ transform: 'none' }}>
+                                    <div className="flex items-center gap-2 mb-6">
+                                        <Truck className="w-5 h-5 text-violet-400" />
+                                        <h3 className="text-lg font-bold text-white">Delivery Timeline — #{order.orderNumber}</h3>
+                                        <span className="ml-auto text-xs text-gray-500 font-mono">CN: {order.consignmentId}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between relative">
+                                        <div className="absolute top-6 left-8 right-8 h-0.5 bg-white/10 z-0" />
+                                        <div className="absolute top-6 left-8 h-0.5 bg-violet-500 z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
+                                        {TIMELINE_STEPS.map((step, idx) => {
+                                            const Icon = step.icon;
+                                            const isCompleted = idx <= activeIdx;
+                                            const isCurrent = idx === activeIdx;
+                                            return (
+                                                <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
+                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
+                                                        ${isCurrent ? 'border-violet-500 bg-violet-500/20 text-violet-400 shadow-lg shadow-violet-500/20' :
+                                                            isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
+                                                                'border-white/10 bg-white/5 text-gray-600'}`}>
+                                                        <Icon className="w-5 h-5" />
+                                                    </div>
+                                                    <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-600'}`}>{step.label}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* OMS Send Modal */}
+                        {omsModalOrder && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                                <div className="bg-[#110C1D] border border-violet-500/20 rounded-2xl shadow-2xl shadow-violet-500/10 w-full max-w-lg mx-4 overflow-hidden">
+                                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">Send to Pathao</h3>
+                                            <p className="text-xs text-gray-500">Order #{omsModalOrder.orderNumber} — {omsModalOrder.customerName}</p>
+                                        </div>
+                                        <button onClick={() => setOmsModalOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                                    </div>
+                                    <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Delivery Type</label>
+                                            <select value={omsModalData.deliveryType} onChange={e => setOmsModalData({ ...omsModalData, deliveryType: Number(e.target.value) })} className="input-field">
+                                                <option value={48} className="bg-[#1a1225]">Normal Delivery</option>
+                                                <option value={12} className="bg-[#1a1225]">On-Demand Delivery</option>
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Total Weight (kg)</label>
+                                                <input type="number" step="0.1" min="0.1" value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="input-field" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Quantity</label>
+                                                <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => setOmsModalData({ ...omsModalData, itemQuantity: parseInt(e.target.value) || 1 })} className="input-field" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Amount to Collect (৳)</label>
+                                            <input type="number" min="0" value={omsModalData.amountToCollect} onChange={e => setOmsModalData({ ...omsModalData, amountToCollect: parseFloat(e.target.value) || 0 })} className="input-field" />
+                                            <p className="text-xs text-gray-600 mt-1">{(omsModalOrder.paymentMethod || 'cod') === 'cod' ? 'COD — customer pays on delivery' : 'Prepaid — already paid'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Item Description & Price</label>
+                                            <input type="text" value={omsModalData.itemDescription} onChange={e => setOmsModalData({ ...omsModalData, itemDescription: e.target.value })} className="input-field" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Special Instructions</label>
+                                            <textarea rows={3} value={omsModalData.specialInstruction} onChange={e => setOmsModalData({ ...omsModalData, specialInstruction: e.target.value })} className="input-field resize-none" placeholder="e.g. Handle with care, fragile..." />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
+                                        <button onClick={() => setOmsModalOrder(null)} className="px-4 py-2.5 text-sm font-medium text-gray-400 border border-white/10 rounded-lg hover:bg-white/5">Cancel</button>
+                                        <button onClick={handleOmsSubmit} className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-semibold rounded-lg border border-violet-500/30 transition-all">
+                                            <Send className="w-4 h-4" /> Send to Pathao
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* ═══ EDIT MODAL ═══ */}
             {
