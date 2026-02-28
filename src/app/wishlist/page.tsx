@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -46,8 +47,8 @@ export default function WishlistPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map(p => (
                         <div key={p._id} className="glass-card overflow-hidden group">
-                            <div className="relative">
-                                <img src={p.imageUrls?.[0]} alt={p.name} className="w-full h-52 object-cover" />
+                            <div className="relative w-full h-52">
+                                <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                                 <button onClick={() => remove(p._id)} className="absolute top-3 right-3 p-2 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>

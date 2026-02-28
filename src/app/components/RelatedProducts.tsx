@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingBag, Loader2 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -46,7 +47,7 @@ export default function RelatedProducts({ currentId, category }: { currentId: st
                     <Link key={p._id} href={`/product/${p._id}`} className="group glass-card p-3 sm:p-4 hover:border-violet-500/50 transition-all flex flex-col h-full">
                         <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-3 sm:mb-4 bg-gray-900/50">
                             {p.imageUrls?.length > 0 ? (
-                                <img src={p.imageUrls[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                <Image src={p.imageUrls[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" sizes="(max-width: 768px) 50vw, 25vw" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-600">
                                     <ShoppingBag className="w-8 h-8" />

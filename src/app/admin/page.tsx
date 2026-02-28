@@ -6,8 +6,9 @@ import {
     Upload, Package, Trash2, CheckCircle, AlertCircle, ImagePlus, Loader2,
     Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X, Copy,
     DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
-    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star
+    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star, Users
 } from "lucide-react";
+import Image from "next/image";
 
 // Types
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
@@ -119,8 +120,27 @@ export default function AdminPage() {
     const [sShowDeliveryZone, setSShowDeliveryZone] = useState(true);
     const [sFeatures, setSFeatures] = useState({ trackOrder: true, productReviews: true, relatedProducts: true });
 
+    // Live visitor counter
+    const [liveVisitors, setLiveVisitors] = useState(0);
+
     useEffect(() => { checkAuth(); }, []);
     useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); } }, [toast]);
+
+    useEffect(() => {
+        if (!isAuth) return;
+
+        const fetchVisitorCount = async () => {
+            try {
+                const r = await axios.get(`/api/visitors/count?t=${Date.now()}`);
+                setLiveVisitors(r.data.count);
+            } catch (err) { }
+        };
+
+        fetchVisitorCount();
+        const interval = setInterval(fetchVisitorCount, 30000); // Poll every 30s
+
+        return () => clearInterval(interval);
+    }, [isAuth]);
 
     const checkAuth = async () => {
         try { await axios.get(`/api/admin/check`); setIsAuth(true); loadAll(); }
@@ -395,8 +415,20 @@ export default function AdminPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 mb-3">
-                        <Package className="w-4 h-4 text-violet-400" /><span className="text-sm text-violet-300">Admin Panel</span>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
+                            <Package className="w-4 h-4 text-violet-400" /><span className="text-sm text-violet-300">Admin Panel</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20">
+                            <div className="relative flex items-center justify-center w-3 h-3">
+                                <span className="absolute inline-flex w-full h-full rounded-full bg-fuchsia-400 opacity-75 animate-ping"></span>
+                                <span className="relative inline-flex w-2 h-2 rounded-full bg-fuchsia-500"></span>
+                            </div>
+                            <span className="text-sm font-medium text-fuchsia-300">
+                                <Users className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
+                                Live Visitors: {liveVisitors}
+                            </span>
+                        </div>
                     </div>
                     <h1 className="text-3xl sm:text-4xl font-bold gradient-text">Dashboard</h1>
                 </div>
@@ -461,7 +493,11 @@ export default function AdminPage() {
                             <div><label className="text-sm text-gray-400 mb-1 block">Category</label><input type="text" value={pCat} onChange={e => setPCat(e.target.value)} placeholder="Electronics" className="input-field" /></div>
                             <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Short description..." rows={3} className="input-field resize-none" /></div>
                             {/* Drag & Drop */}
-                            <div><label className="text-sm text-gray-400 mb-1 block">Product Images</label>
+                            <div>
+                                <div className="flex items-baseline justify-between mb-1">
+                                    <label className="text-sm text-gray-400 block">Product Images</label>
+                                    <span className="text-xs text-violet-400/80">Recommended: 1080x1080 (1:1) for Meta Ads</span>
+                                </div>
                                 <div onClick={() => fileRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={onDrop}
                                     className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-violet-400 bg-violet-500/10" : "border-gray-700 hover:border-violet-500/50"}`}>
                                     {pPreviews.length > 0 ? <div className="grid grid-cols-3 gap-2">{pPreviews.map((p, i) => <img key={i} src={p} alt="" className="w-full h-24 object-cover rounded-lg" />)}</div>
@@ -498,7 +534,7 @@ export default function AdminPage() {
                                 {pagedProducts.map(p => (
                                     <div key={p._id} className={`glass-card flex items-center gap-3 p-3 ${selectedIds.has(p._id) ? "ring-1 ring-violet-500/50" : ""}`} style={{ transform: "none" }}>
                                         <input type="checkbox" checked={selectedIds.has(p._id)} onChange={() => toggleSelect(p._id)} className="accent-violet-500 flex-shrink-0" />
-                                        <img src={p.imageUrls?.[0] || ""} alt={p.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                        {p.imageUrls?.[0] && <Image src={p.imageUrls[0]} alt={p.name} width={48} height={48} className="rounded-lg object-cover flex-shrink-0" />}
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-medium truncate text-sm">{p.name}</h3>
                                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">

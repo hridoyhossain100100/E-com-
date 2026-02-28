@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import MarketingScripts, { GTMNoScript } from "./components/MarketingScripts";
+import LiveVisitorTracker from "./components/LiveVisitorTracker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,12 +20,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <MarketingScripts />
       </head>
-      <body className={`${inter.className} antialiased min-h-screen bg-gray-950 text-white dark:bg-gray-950 dark:text-white`}>
+      <body className={`${inter.className} antialiased min-h-screen bg-gray-950 text-white dark:bg-gray-950 dark:text-white`} suppressHydrationWarning>
         <GTMNoScript />
+        <LiveVisitorTracker />
         <Navbar />
         <main>{children}</main>
       </body>
