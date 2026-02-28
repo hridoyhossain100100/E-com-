@@ -66,6 +66,10 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         default: 60
     },
+    consignmentId: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         enum: ['pending', 'confirmed', 'shipped', 'delivered'],
