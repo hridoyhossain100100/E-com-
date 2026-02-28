@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { sendOrderToPathao } from '@/app/actions/pathaoIntegration';
 import type { DeliveryDetails } from '@/app/actions/pathaoIntegration';
+import React from 'react';
 
 // Types
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
@@ -970,82 +971,84 @@ export default function AdminPage() {
                                             <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
                                         ) : (
                                             omsOrders.map((order: any) => (
-                                                <tr key={order._id} className="hover:bg-white/[0.02] transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <span className="font-semibold text-white">#{order.orderNumber}</span>
-                                                        <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="font-medium text-white">{order.customerName}</div>
-                                                        <div className="text-xs text-gray-500">{order.customerPhone}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
-                                                        {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
-                                                        {order.consignmentId && (
-                                                            <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
-                                                                {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        {!order.consignmentId ? (
-                                                            <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
-                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
-                                                                {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
-                                                            </button>
-                                                        ) : (
-                                                            <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
-                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
-                                                                Track Order
-                                                            </a>
-                                                        )}
-                                                    </td>
-                                                </tr>
+                                                <React.Fragment key={order._id}>
+                                                    <tr className={`transition-colors ${omsExpandedId === order._id ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'}`}>
+                                                        <td className="px-6 py-4">
+                                                            <span className="font-semibold text-white">#{order.orderNumber}</span>
+                                                            <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="font-medium text-white">{order.customerName}</div>
+                                                            <div className="text-xs text-gray-500">{order.customerPhone}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
+                                                            {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
+                                                            {order.consignmentId && (
+                                                                <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
+                                                                    {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            {!order.consignmentId ? (
+                                                                <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
+                                                                    {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
+                                                                </button>
+                                                            ) : (
+                                                                <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
+                                                                    Track Order
+                                                                </a>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                    {omsExpandedId === order._id && order.consignmentId ? (() => {
+                                                        const activeIdx = getTimelineIndex(order.pathaoStatus);
+                                                        return (
+                                                            <tr className="bg-black/20 border-b border-white/5">
+                                                                <td colSpan={6} className="p-0">
+                                                                    <div className="p-6">
+                                                                        <div className="flex items-center gap-2 mb-6">
+                                                                            <Truck className="w-5 h-5 text-violet-400" />
+                                                                            <h3 className="text-lg font-bold text-white">Delivery Timeline — #{order.orderNumber}</h3>
+                                                                            <span className="ml-auto text-xs text-gray-500 font-mono">CN: {order.consignmentId}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between relative">
+                                                                            <div className="absolute top-6 left-8 right-8 h-0.5 bg-white/10 z-0" />
+                                                                            <div className="absolute top-6 left-8 h-0.5 bg-violet-500 z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
+                                                                            {TIMELINE_STEPS.map((step, idx) => {
+                                                                                const Icon = step.icon;
+                                                                                const isCompleted = idx <= activeIdx;
+                                                                                const isCurrent = idx === activeIdx;
+                                                                                return (
+                                                                                    <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
+                                                                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
+                                                                                            ${isCurrent ? 'border-violet-500 bg-violet-500/20 text-violet-400 shadow-lg shadow-violet-500/20' :
+                                                                                                isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
+                                                                                                    'border-white/10 bg-white/5 text-gray-600'}`}>
+                                                                                            <Icon className="w-5 h-5" />
+                                                                                        </div>
+                                                                                        <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-600'}`}>{step.label}</span>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })() : null}
+                                                </React.Fragment>
                                             ))
                                         )}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-
-                        {/* Timeline Expansion */}
-                        {omsExpandedId && (() => {
-                            const order = omsOrders.find((o: any) => o._id === omsExpandedId);
-                            if (!order || !order.consignmentId) return null;
-                            const activeIdx = getTimelineIndex(order.pathaoStatus);
-                            return (
-                                <div className="glass-card p-6 border border-white/5" style={{ transform: 'none' }}>
-                                    <div className="flex items-center gap-2 mb-6">
-                                        <Truck className="w-5 h-5 text-violet-400" />
-                                        <h3 className="text-lg font-bold text-white">Delivery Timeline — #{order.orderNumber}</h3>
-                                        <span className="ml-auto text-xs text-gray-500 font-mono">CN: {order.consignmentId}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between relative">
-                                        <div className="absolute top-6 left-8 right-8 h-0.5 bg-white/10 z-0" />
-                                        <div className="absolute top-6 left-8 h-0.5 bg-violet-500 z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
-                                        {TIMELINE_STEPS.map((step, idx) => {
-                                            const Icon = step.icon;
-                                            const isCompleted = idx <= activeIdx;
-                                            const isCurrent = idx === activeIdx;
-                                            return (
-                                                <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
-                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
-                                                        ${isCurrent ? 'border-violet-500 bg-violet-500/20 text-violet-400 shadow-lg shadow-violet-500/20' :
-                                                            isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
-                                                                'border-white/10 bg-white/5 text-gray-600'}`}>
-                                                        <Icon className="w-5 h-5" />
-                                                    </div>
-                                                    <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-600'}`}>{step.label}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })()}
 
                         {/* OMS Send Modal */}
                         {omsModalOrder && (
