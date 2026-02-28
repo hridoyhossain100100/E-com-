@@ -1080,7 +1080,11 @@ export default function AdminPage() {
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-400 mb-1.5">Quantity</label>
-                                                <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => setOmsModalData({ ...omsModalData, itemQuantity: parseInt(e.target.value) || 1 })} className="input-field" />
+                                                <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => {
+                                                    const newQty = parseInt(e.target.value) || 1;
+                                                    const baseAmount = omsModalOrder.paymentMethod === 'cod' ? (omsModalOrder.totalAmount / (omsModalData.itemQuantity || 1)) : 0;
+                                                    setOmsModalData({ ...omsModalData, itemQuantity: newQty, amountToCollect: baseAmount * newQty });
+                                                }} className="input-field" />
                                             </div>
                                         </div>
                                         <div>
