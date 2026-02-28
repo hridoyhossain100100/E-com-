@@ -951,62 +951,64 @@ export default function AdminPage() {
 
                         {/* Table */}
                         <div className="glass-card border border-white/5 overflow-hidden" style={{ transform: 'none' }}>
-                            <table className="w-full text-sm text-left">
-                                <thead className="border-b border-white/10">
-                                    <tr>
-                                        <th className="px-6 py-4 text-gray-400 font-medium">Order</th>
-                                        <th className="px-6 py-4 text-gray-400 font-medium">Customer</th>
-                                        <th className="px-6 py-4 text-gray-400 font-medium">Payment</th>
-                                        <th className="px-6 py-4 text-gray-400 font-medium">Status</th>
-                                        <th className="px-6 py-4 text-gray-400 font-medium">Amount</th>
-                                        <th className="px-6 py-4 text-gray-400 font-medium text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {omsLoading ? (
-                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /><p>Loading orders...</p></td></tr>
-                                    ) : omsOrders.length === 0 ? (
-                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
-                                    ) : (
-                                        omsOrders.map((order: any) => (
-                                            <tr key={order._id} className="hover:bg-white/[0.02] transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <span className="font-semibold text-white">#{order.orderNumber}</span>
-                                                    <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-medium text-white">{order.customerName}</div>
-                                                    <div className="text-xs text-gray-500">{order.customerPhone}</div>
-                                                </td>
-                                                <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
-                                                    {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
-                                                    {order.consignmentId && (
-                                                        <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
-                                                            {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
-                                                        </button>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    {!order.consignmentId ? (
-                                                        <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
-                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
-                                                            {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
-                                                        </button>
-                                                    ) : (
-                                                        <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
-                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
-                                                            Track Order
-                                                        </a>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
+                                    <thead className="border-b border-white/10">
+                                        <tr>
+                                            <th className="px-6 py-4 text-gray-400 font-medium">Order</th>
+                                            <th className="px-6 py-4 text-gray-400 font-medium">Customer</th>
+                                            <th className="px-6 py-4 text-gray-400 font-medium">Payment</th>
+                                            <th className="px-6 py-4 text-gray-400 font-medium">Status</th>
+                                            <th className="px-6 py-4 text-gray-400 font-medium">Amount</th>
+                                            <th className="px-6 py-4 text-gray-400 font-medium text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {omsLoading ? (
+                                            <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /><p>Loading orders...</p></td></tr>
+                                        ) : omsOrders.length === 0 ? (
+                                            <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
+                                        ) : (
+                                            omsOrders.map((order: any) => (
+                                                <tr key={order._id} className="hover:bg-white/[0.02] transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <span className="font-semibold text-white">#{order.orderNumber}</span>
+                                                        <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-medium text-white">{order.customerName}</div>
+                                                        <div className="text-xs text-gray-500">{order.customerPhone}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
+                                                        {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
+                                                        {order.consignmentId && (
+                                                            <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
+                                                                {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {!order.consignmentId ? (
+                                                            <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
+                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
+                                                                {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
+                                                            </button>
+                                                        ) : (
+                                                            <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
+                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
+                                                                Track Order
+                                                            </a>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         {/* Timeline Expansion */}
