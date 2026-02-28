@@ -32,6 +32,15 @@ interface PathaoOrderResponse {
     };
 }
 
+export interface DeliveryDetails {
+    itemWeight: number;
+    deliveryType: number;     // 48 = Normal, 12 = On-Demand
+    specialInstruction: string;
+    itemDescription: string;
+    amountToCollect: number;
+    itemQuantity: number;
+}
+
 interface ActionResult {
     success: boolean;
     consignmentId?: string;
@@ -69,7 +78,7 @@ async function getPathaoAccessToken(): Promise<string> {
 }
 
 // ─── Main Server Action ────────────────────────────────────────────────────
-export async function sendOrderToPathao(orderId: string): Promise<ActionResult> {
+export async function sendOrderToPathao(orderId: string, deliveryDetails: DeliveryDetails): Promise<ActionResult> {
     try {
         // Validate env vars
         if (!PATHAO_BASE_URL || !PATHAO_CLIENT_ID || !PATHAO_CLIENT_SECRET || !PATHAO_USERNAME || !PATHAO_PASSWORD || !PATHAO_STORE_ID) {
@@ -91,35 +100,20 @@ export async function sendOrderToPathao(orderId: string): Promise<ActionResult> 
         // ── Step 2: Authenticate with Pathao ──────────────────────────────────
         const accessToken = await getPathaoAccessToken();
 
-        // ── Step 3: Build Pathao Order Payload ────────────────────────────────
-        // amount_to_collect = total if COD, 0 otherwise (already paid via bkash/nagad/rocket)
-        const amountToCollect = order.paymentMethod === 'cod' ? order.totalAmount : 0;
-
-        const totalQuantity = order.products?.reduce(
-            (sum: number, item: { quantity: number }) => sum + (item.quantity || 1),
-            0
-        ) || 1;
-
-        // Build item description from product names
-        const itemDescription = order.products
-            ?.map((p: { name: string; quantity: number; price: number }) => `${p.name} x${p.quantity}`)
-            .join(', ') || `Order #${order.orderNumber}`;
-
+        // ── Step 3: Build Pathao Order Payload using user-provided values ─────
         const pathaoPayload = {
             store_id: parseInt(PATHAO_STORE_ID, 10),
             merchant_order_id: order.orderNumber.toString(),
             recipient_name: order.customerName,
             recipient_phone: order.customerPhone,
             recipient_address: order.customerAddress,
-            // recipient_city, recipient_zone, recipient_area are OPTIONAL per Pathao docs.
-            // Pathao auto-populates them based on the recipient_address.
-            delivery_type: 48,    // 48 = Normal Delivery
+            delivery_type: deliveryDetails.deliveryType,
             item_type: 2,         // 2 = Parcel
-            special_instruction: `Order #${order.orderNumber} | Payment: ${order.paymentMethod.toUpperCase()}`,
-            item_quantity: totalQuantity,
-            item_weight: 0.5,     // Default 0.5 KG — adjust per your needs
-            item_description: itemDescription,
-            amount_to_collect: amountToCollect,
+            special_instruction: deliveryDetails.specialInstruction,
+            item_quantity: deliveryDetails.itemQuantity,
+            item_weight: deliveryDetails.itemWeight,
+            item_description: deliveryDetails.itemDescription,
+            amount_to_collect: deliveryDetails.amountToCollect,
         };
 
         // ── Step 4: Create Order in Pathao ────────────────────────────────────
@@ -148,7 +142,8 @@ export async function sendOrderToPathao(orderId: string): Promise<ActionResult> 
 
         // ── Step 5: Update MongoDB Order ──────────────────────────────────────
         order.consignmentId = consignmentId;
-        order.status = 'confirmed'; // Changed from 'shipped' because creating a consignment doesn't mean it's physically shipped yet. Webhooks handle 'shipped'.
+        order.status = 'confirmed';
+        order.pathaoStatus = 'Pickup_Pending';
 
         // Save the exact shipping cost calculated by Pathao inside the order
         if (orderData.data?.delivery_fee) {

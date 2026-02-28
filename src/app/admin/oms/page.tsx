@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { sendOrderToPathao } from '@/app/actions/pathaoIntegration';
-import { Loader2, Send, Package, RefreshCw } from 'lucide-react';
+import type { DeliveryDetails } from '@/app/actions/pathaoIntegration';
+import { Loader2, Send, Package, RefreshCw, X, Truck, CheckCircle2, Clock, PackageCheck, MapPin } from 'lucide-react';
 
 // ─── Order Type ─────────────────────────────────────────────────────────────
+interface OrderProduct {
+    name: string;
+    quantity: number;
+    price: number;
+}
+
 interface OrderItem {
     _id: string;
     orderNumber: number;
@@ -15,7 +22,24 @@ interface OrderItem {
     paymentMethod: string;
     status: string;
     consignmentId?: string;
+    pathaoStatus?: string;
+    products?: OrderProduct[];
     createdAt: string;
+}
+
+// ─── Timeline Steps ─────────────────────────────────────────────────────────
+const TIMELINE_STEPS = [
+    { key: 'Pickup_Pending', label: 'Accepted', icon: CheckCircle2 },
+    { key: 'Picked', label: 'Picked', icon: PackageCheck },
+    { key: 'In_Transit', label: 'In Transit', icon: Truck },
+    { key: 'Out_For_Delivery', label: 'Out for Delivery', icon: MapPin },
+    { key: 'Delivered', label: 'Delivered', icon: Package },
+];
+
+function getTimelineIndex(pathaoStatus?: string): number {
+    if (!pathaoStatus) return 0;
+    const idx = TIMELINE_STEPS.findIndex(s => s.key === pathaoStatus);
+    return idx >= 0 ? idx : 0;
 }
 
 export default function OMSDashboard() {
@@ -23,6 +47,20 @@ export default function OMSDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+    // Modal state
+    const [modalOrder, setModalOrder] = useState<OrderItem | null>(null);
+    const [modalData, setModalData] = useState<DeliveryDetails>({
+        itemWeight: 0.5,
+        deliveryType: 48,
+        specialInstruction: '',
+        itemDescription: '',
+        amountToCollect: 0,
+        itemQuantity: 1,
+    });
+
+    // Timeline expand state
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchOrders();
@@ -50,16 +88,36 @@ export default function OMSDashboard() {
         setTimeout(() => setToast(null), 6000);
     };
 
-    // ─── Send to Pathao Handler ─────────────────────────────────────────────
-    const handleSendToPathao = async (orderId: string) => {
-        setProcessingId(orderId);
+    // ─── Open Modal ─────────────────────────────────────────────────────────
+    const openModal = (order: OrderItem) => {
+        const totalQty = order.products?.reduce((s, p) => s + (p.quantity || 1), 0) || 1;
+        const desc = order.products?.map(p => `${p.name} x${p.quantity}`).join(', ') || `Order #${order.orderNumber}`;
+        const amount = order.paymentMethod === 'cod' ? order.totalAmount : 0;
+
+        setModalData({
+            itemWeight: 0.5,
+            deliveryType: 48,
+            specialInstruction: `Order #${order.orderNumber} | Payment: ${order.paymentMethod.toUpperCase()}`,
+            itemDescription: desc,
+            amountToCollect: amount,
+            itemQuantity: totalQty,
+        });
+        setModalOrder(order);
+    };
+
+    // ─── Submit Modal ───────────────────────────────────────────────────────
+    const handleModalSubmit = async () => {
+        if (!modalOrder) return;
+        setProcessingId(modalOrder._id);
+        setModalOrder(null); // close modal
+
         try {
-            const result = await sendOrderToPathao(orderId);
+            const result = await sendOrderToPathao(modalOrder._id, modalData);
             if (result?.success) {
-                showToast('success', `✅ Order sent to Pathao! Consignment: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
+                showToast('success', `✅ Order sent to Pathao! CN: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
                 setOrders((prev) =>
                     prev.map((o) =>
-                        o._id === orderId ? { ...o, status: 'confirmed', consignmentId: result.consignmentId } : o
+                        o._id === modalOrder._id ? { ...o, status: 'confirmed', consignmentId: result.consignmentId, pathaoStatus: 'Pickup_Pending' } : o
                     )
                 );
             } else {
@@ -148,7 +206,8 @@ export default function OMSDashboard() {
                                 </tr>
                             ) : (
                                 orders.map((order) => (
-                                    <tr key={order._id} className="hover:bg-gray-50/60 transition-colors">
+                                    <tr key={order._id} className="group">
+                                        {/* Row */}
                                         <td className="px-6 py-4">
                                             <span className="font-semibold text-gray-900">#{order.orderNumber}</span>
                                             <div className="text-xs text-gray-400 mt-0.5">
@@ -180,12 +239,21 @@ export default function OMSDashboard() {
                                                     CN: {order.consignmentId}
                                                 </div>
                                             )}
+                                            {/* Timeline toggle */}
+                                            {order.consignmentId && (
+                                                <button
+                                                    onClick={() => setExpandedOrderId(expandedOrderId === order._id ? null : order._id)}
+                                                    className="text-[11px] text-blue-500 hover:text-blue-700 mt-1 underline"
+                                                >
+                                                    {expandedOrderId === order._id ? 'Hide Timeline' : 'View Timeline'}
+                                                </button>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 font-semibold text-gray-900">৳{order.totalAmount}</td>
                                         <td className="px-6 py-4 text-right">
                                             {!order.consignmentId ? (
                                                 <button
-                                                    onClick={() => handleSendToPathao(order._id)}
+                                                    onClick={() => openModal(order)}
                                                     disabled={processingId === order._id}
                                                     className="inline-flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
                                                 >
@@ -218,7 +286,173 @@ export default function OMSDashboard() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* ── Expanded Timeline Section ──────────────────────────────── */}
+                {expandedOrderId && (() => {
+                    const order = orders.find(o => o._id === expandedOrderId);
+                    if (!order || !order.consignmentId) return null;
+                    const activeIdx = getTimelineIndex(order.pathaoStatus);
+
+                    return (
+                        <div className="border border-gray-200 rounded-xl shadow-sm bg-white p-6">
+                            <div className="flex items-center gap-2 mb-6">
+                                <Truck className="w-5 h-5 text-gray-700" />
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    Delivery Timeline — #{order.orderNumber}
+                                </h2>
+                                <span className="ml-auto text-xs text-gray-400 font-mono">
+                                    CN: {order.consignmentId}
+                                </span>
+                            </div>
+
+                            {/* Timeline */}
+                            <div className="flex items-center justify-between relative">
+                                {/* Background line */}
+                                <div className="absolute top-6 left-8 right-8 h-0.5 bg-gray-200 z-0" />
+                                <div
+                                    className="absolute top-6 left-8 h-0.5 bg-red-500 z-10 transition-all duration-500"
+                                    style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }}
+                                />
+
+                                {TIMELINE_STEPS.map((step, idx) => {
+                                    const Icon = step.icon;
+                                    const isCompleted = idx <= activeIdx;
+                                    const isCurrent = idx === activeIdx;
+                                    return (
+                                        <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
+                                            <div
+                                                className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
+                                                    ${isCurrent ? 'border-red-500 bg-red-50 text-red-600 shadow-lg shadow-red-100' :
+                                                        isCompleted ? 'border-green-500 bg-green-50 text-green-600' :
+                                                            'border-gray-200 bg-white text-gray-300'}`}
+                                            >
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-red-600' : isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
+                                                {step.label}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
+
+            {/* ─── Send to Pathao Modal ────────────────────────────────────────── */}
+            {modalOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50/60">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Send to Pathao</h3>
+                                <p className="text-xs text-gray-500">Order #{modalOrder.orderNumber} — {modalOrder.customerName}</p>
+                            </div>
+                            <button onClick={() => setModalOrder(null)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Form Body */}
+                        <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                            {/* Delivery Type */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Delivery Type</label>
+                                <select
+                                    value={modalData.deliveryType}
+                                    onChange={e => setModalData({ ...modalData, deliveryType: Number(e.target.value) })}
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none"
+                                >
+                                    <option value={48}>Normal Delivery</option>
+                                    <option value={12}>On-Demand Delivery</option>
+                                </select>
+                            </div>
+
+                            {/* Weight + Quantity Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Total Weight (kg)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0.1"
+                                        value={modalData.itemWeight}
+                                        onChange={e => setModalData({ ...modalData, itemWeight: parseFloat(e.target.value) || 0.5 })}
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Quantity</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={modalData.itemQuantity}
+                                        onChange={e => setModalData({ ...modalData, itemQuantity: parseInt(e.target.value) || 1 })}
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Amount to Collect */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Amount to Collect (৳)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={modalData.amountToCollect}
+                                    onChange={e => setModalData({ ...modalData, amountToCollect: parseFloat(e.target.value) || 0 })}
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                    {modalOrder.paymentMethod === 'cod' ? 'COD order — customer will pay on delivery' : 'Prepaid — already paid via ' + modalOrder.paymentMethod.toUpperCase()}
+                                </p>
+                            </div>
+
+                            {/* Item Description */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Item Description & Price</label>
+                                <input
+                                    type="text"
+                                    value={modalData.itemDescription}
+                                    onChange={e => setModalData({ ...modalData, itemDescription: e.target.value })}
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none"
+                                />
+                            </div>
+
+                            {/* Special Instructions */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Special Instructions</label>
+                                <textarea
+                                    rows={3}
+                                    value={modalData.specialInstruction}
+                                    onChange={e => setModalData({ ...modalData, specialInstruction: e.target.value })}
+                                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none resize-none"
+                                    placeholder="e.g. Handle with care, fragile items..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/60">
+                            <button
+                                onClick={() => setModalOrder(null)}
+                                className="px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleModalSubmit}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-semibold rounded-lg transition-all shadow-sm hover:shadow"
+                            >
+                                <Send className="w-4 h-4" />
+                                Send to Pathao
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
