@@ -92,7 +92,7 @@ export async function sendOrderToPathao(orderId: string): Promise<ActionResult> 
         const accessToken = await getPathaoAccessToken();
 
         // ── Step 3: Build Pathao Order Payload ────────────────────────────────
-        // amount_to_collect = total if COD, 0 otherwise (already paid)
+        // amount_to_collect = total if COD, 0 otherwise (already paid via bkash/nagad/rocket)
         const amountToCollect = order.paymentMethod === 'cod' ? order.totalAmount : 0;
 
         const totalQuantity = order.products?.reduce(
@@ -111,13 +111,13 @@ export async function sendOrderToPathao(orderId: string): Promise<ActionResult> 
             recipient_name: order.customerName,
             recipient_phone: order.customerPhone,
             recipient_address: order.customerAddress,
-            // recipient_city, recipient_zone, recipient_area are OPTIONAL.
-            // Pathao auto-populates them from the recipient_address.
+            // recipient_city, recipient_zone, recipient_area are OPTIONAL per Pathao docs.
+            // Pathao auto-populates them based on the recipient_address.
             delivery_type: 48,    // 48 = Normal Delivery
             item_type: 2,         // 2 = Parcel
             special_instruction: `Order #${order.orderNumber} | Payment: ${order.paymentMethod.toUpperCase()}`,
             item_quantity: totalQuantity,
-            item_weight: 0.5,     // Default 0.5 KG — adjust as needed
+            item_weight: 0.5,     // Default 0.5 KG — adjust per your needs
             item_description: itemDescription,
             amount_to_collect: amountToCollect,
         };
@@ -148,7 +148,13 @@ export async function sendOrderToPathao(orderId: string): Promise<ActionResult> 
 
         // ── Step 5: Update MongoDB Order ──────────────────────────────────────
         order.consignmentId = consignmentId;
-        order.status = 'shipped';
+        order.status = 'confirmed'; // Changed from 'shipped' because creating a consignment doesn't mean it's physically shipped yet. Webhooks handle 'shipped'.
+
+        // Save the exact shipping cost calculated by Pathao inside the order
+        if (orderData.data?.delivery_fee) {
+            order.shippingCost = orderData.data.delivery_fee;
+        }
+
         await order.save();
 
         revalidatePath('/admin/oms');
