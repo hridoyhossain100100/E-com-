@@ -203,7 +203,7 @@ export default function OMSDashboard() {
                                                 </button>
                                             ) : (
                                                 <a
-                                                    href={`https://pathao.com/bd/courier/tracking/?consignment_id=${order.consignmentId}`}
+                                                    href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium border border-gray-200 rounded-lg transition-all shadow-sm"
