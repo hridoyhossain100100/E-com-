@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import MarketingScripts, { GTMNoScript } from "./components/MarketingScripts";
 import LiveVisitorTracker from "./components/LiveVisitorTracker";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <LiveVisitorTracker />
         <Navbar />
         <main>{children}</main>
+        <SpeedInsights />
       </body>
     </html>
   );
