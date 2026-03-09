@@ -41,14 +41,14 @@ const DEFAULTS: Record<string, any> = {
         badge: 'Premium Collection',
         title: 'Discover Quality',
         titleHighlight: 'Products',
-        description: 'Curated collection of premium products. Shop with confidence, pay with Bkash, Nagad or Rocket.',
+        description: 'Curated collection of premium products. Shop with confidence. Enjoy Cash on Delivery.',
         showNewArrivals: true,
     },
     // Footer Content
     footerContent: {
         description: 'Your trusted destination for premium products in Bangladesh. Quality guaranteed.',
         copyrightText: '© {year} ShopVibe. All rights reserved. Made with 💜 in Bangladesh',
-        paymentMethods: ['Bkash', 'Nagad', 'Rocket'],
+        paymentMethods: ['Cash on Delivery'],
         quickLinks: [
             { label: 'Shop', href: '/' },
             { label: 'Checkout', href: '/checkout' },
@@ -58,8 +58,8 @@ const DEFAULTS: Record<string, any> = {
     // SEO Settings
     seo: {
         siteTitle: 'ShopVibe — Premium E-Commerce Bangladesh',
-        metaDescription: 'Your one-stop shop for quality products at the best prices in Bangladesh. Shop with confidence, pay with Bkash, Nagad or Rocket. Free delivery in Dhaka.',
-        keywords: 'shop, ecommerce, bkash, online shopping, bangladesh, nagad, rocket, premium products, dhaka, shopvibe',
+        metaDescription: 'Your one-stop shop for quality products at the best prices in Bangladesh. Shop with confidence. Enjoy Cash on Delivery. Free delivery in Dhaka.',
+        keywords: 'shop, ecommerce, online shopping, bangladesh, premium products, dhaka, shopvibe',
         ogImage: '',
         siteUrl: '',
     },

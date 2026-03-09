@@ -28,8 +28,6 @@ export async function POST(req: Request) {
             customerName,
             customerPhone,
             customerAddress,
-            bkashNumber,
-            transactionId,
             couponCode,
             discountAmount,
             paymentMethod,
@@ -50,9 +48,6 @@ export async function POST(req: Request) {
         }
         if (!customerAddress || typeof customerAddress !== 'string' || customerAddress.trim().length < 5) {
             return NextResponse.json({ message: 'Valid delivery address is required (min 5 chars)' }, { status: 400 });
-        }
-        if (paymentMethod !== 'cod' && (!bkashNumber || !transactionId)) {
-            return NextResponse.json({ message: 'Payment details are required for this payment method' }, { status: 400 });
         }
         // @security-audit: Validate product quantities to prevent negative/zero values
         for (const item of products) {
@@ -105,8 +100,6 @@ export async function POST(req: Request) {
                 existingOrder.customerName = customerName;
                 existingOrder.customerPhone = customerPhone;
                 existingOrder.customerAddress = customerAddress;
-                existingOrder.bkashNumber = paymentMethod === 'cod' ? '' : bkashNumber;
-                existingOrder.transactionId = paymentMethod === 'cod' ? '' : transactionId;
                 existingOrder.couponCode = couponCode;
                 existingOrder.discountAmount = discountAmount;
                 existingOrder.paymentMethod = paymentMethod;
@@ -130,8 +123,6 @@ export async function POST(req: Request) {
                 customerName,
                 customerPhone,
                 customerAddress,
-                bkashNumber: paymentMethod === 'cod' ? '' : bkashNumber,
-                transactionId: paymentMethod === 'cod' ? '' : transactionId,
                 couponCode,
                 discountAmount,
                 paymentMethod,
@@ -168,7 +159,7 @@ ${productList}
 📍 Delivery Address: ${customerAddress}
 
 💳 Payment Details:
-${paymentMethod === 'cod' ? '🏠 Cash on Delivery (COD)' : `📱 ${(paymentMethod || 'bkash').charAt(0).toUpperCase() + (paymentMethod || 'bkash').slice(1)} Phone: \`${bkashNumber}\`\n📄 TrxID: \`${transactionId}\``}
+🏠 Cash on Delivery (COD)
 🆔 Order ID: \`${savedOrder._id.toString()}\``;
 
                 const discordMessage = {

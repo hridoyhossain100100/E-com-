@@ -35,8 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const branding = settings.storeBranding || {};
   const storeName = branding.storeName || 'ShopVibe';
   const siteTitle = seo.siteTitle || `${storeName} — Premium E-Commerce Bangladesh`;
-  const metaDesc = seo.metaDescription || "Your one-stop shop for quality products at the best prices in Bangladesh. Shop with confidence, pay with Bkash, Nagad or Rocket. Free delivery in Dhaka.";
-  const keywords = seo.keywords ? seo.keywords.split(',').map((k: string) => k.trim()) : ["shop", "ecommerce", "bkash", "online shopping", "bangladesh"];
+  const metaDesc = seo.metaDescription || "Your one-stop shop for quality products at the best prices in Bangladesh. Shop with confidence. Enjoy Cash on Delivery. Free delivery in Dhaka.";
+  const keywords = seo.keywords ? seo.keywords.split(',').map((k: string) => k.trim()) : ["shop", "ecommerce", "online shopping", "bangladesh"];
   const siteUrl = seo.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://shopvibe.com";
 
   return {

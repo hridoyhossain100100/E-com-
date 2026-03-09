@@ -36,54 +36,46 @@ const orderSchema = new mongoose.Schema({
     customerAddress: {
         type: String,
         required: false // Optional for draft orders
-    },
-    bkashNumber: {
-        type: String,
-        default: ''
-    },
-    transactionId: {
-        type: String,
-        default: ''
-    },
+
     couponCode: {
-        type: String,
-        default: null
-    },
-    discountAmount: {
-        type: Number,
-        default: 0
-    },
-    paymentMethod: {
-        type: String,
-        enum: ['bkash', 'nagad', 'rocket', 'cod'],
-        default: 'bkash'
-    },
-    shippingZone: {
-        type: String,
-        default: 'dhaka'
-    },
-    shippingCost: {
-        type: Number,
-        default: 60
-    },
-    consignmentId: {
-        type: String,
-        default: null
-    },
-    pathaoStatus: {
-        type: String,
-        default: null
-    },
-    status: {
-        type: String,
-        enum: ['incomplete', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
-        default: 'pending'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+            type: String,
+            default: null
+        },
+        discountAmount: {
+            type: Number,
+            default: 0
+        },
+        paymentMethod: {
+            type: String,
+            enum: ['nagad', 'rocket', 'cod'],
+            default: 'cod'
+        },
+        shippingZone: {
+            type: String,
+            default: 'dhaka'
+        },
+        shippingCost: {
+            type: Number,
+            default: 60
+        },
+        consignmentId: {
+            type: String,
+            default: null
+        },
+        pathaoStatus: {
+            type: String,
+            default: null
+        },
+        status: {
+            type: String,
+            enum: ['incomplete', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+            default: 'pending'
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    });
 
 // @database-optimizer: Add indexes for common query patterns
 orderSchema.index({ orderNumber: 1 }, { unique: true }); // Fast order lookup by number

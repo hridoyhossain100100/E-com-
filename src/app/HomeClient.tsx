@@ -113,7 +113,7 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
               <br /><span className="text-white">{hero.titleHighlight || 'Products'}</span>
             </h1>
             <p className="text-gray-400 text-base sm:text-lg max-w-xl mx-auto mb-8">
-              {hero.description || 'Curated collection of premium products. Shop with confidence, pay with Bkash, Nagad or Rocket.'}
+              {hero.description || 'Curated collection of premium products. Shop with confidence. Enjoy Cash on Delivery.'}
             </p>
             {/* Search Bar */}
             <div className="max-w-lg mx-auto relative mt-8">
@@ -275,7 +275,7 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
             <div>
               <h4 className="font-semibold text-sm text-[var(--foreground)] mb-4 uppercase tracking-wider">We Accept</h4>
               <div className="flex flex-wrap gap-2">
-                {(footer.paymentMethods || ["Bkash", "Nagad", "Rocket"]).map((m: string) => (
+                {(footer.paymentMethods || ["Cash on Delivery"]).map((m: string) => (
                   <span key={m} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-medium text-gray-400">{m}</span>
                 ))}
               </div>

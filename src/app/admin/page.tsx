@@ -20,7 +20,7 @@ import React from 'react';
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
 interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; videoUrl?: string; category: string; stock: number; variants: Variant[]; createdAt?: string; }
 interface OrderProduct { productId: string; name: string; price: number; quantity: number; }
-interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; bkashNumber: string; transactionId: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; shippingZone?: string; shippingCost?: number; consignmentId?: string; pathaoStatus?: string; }
+interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; shippingZone?: string; shippingCost?: number; consignmentId?: string; pathaoStatus?: string; }
 interface Stats { totalOrders: number; totalRevenue: number; totalProducts: number; }
 interface DailyData { date: string; label: string; revenue: number; count: number; }
 interface Coupon { _id: string; code: string; discountPercent: number; maxDiscount: number; usageLimit: number; usedCount: number; expiresAt: string | null; isActive: boolean; }
@@ -154,8 +154,8 @@ export default function AdminPage() {
     const [sBranding, setSBranding] = useState({ storeName: 'ShopVibe', storeTagline: 'Premium E-Commerce Bangladesh', logoUrl: '', faviconUrl: '', storeInitial: 'S' });
     const [sContact, setSContact] = useState({ phone: '+880 1XXXXXXXXX', email: 'support@shopvibe.com', address: '123 Commerce Avenue, Dhaka, Bangladesh' });
     const [sSocial, setSSocial] = useState({ facebook: '', instagram: '', whatsapp: '', youtube: '' });
-    const [sHero, setSHero] = useState({ badge: 'Premium Collection', title: 'Discover Quality', titleHighlight: 'Products', description: 'Curated collection of premium products. Shop with confidence, pay with Bkash, Nagad or Rocket.', showNewArrivals: true });
-    const [sFooter, setSFooter] = useState({ description: 'Your trusted destination for premium products in Bangladesh. Quality guaranteed.', copyrightText: '© {year} ShopVibe. All rights reserved. Made with 💜 in Bangladesh', paymentMethods: ['Bkash', 'Nagad', 'Rocket'] as string[], quickLinks: [{ label: 'Shop', href: '/' }, { label: 'Checkout', href: '/checkout' }, { label: 'Wishlist', href: '/wishlist' }] });
+    const [sHero, setSHero] = useState({ badge: 'Premium Collection', title: 'Discover Quality', titleHighlight: 'Products', description: 'Curated collection of premium products. Shop with confidence. Enjoy Cash on Delivery.', showNewArrivals: true });
+    const [sFooter, setSFooter] = useState({ description: 'Your trusted destination for premium products in Bangladesh. Quality guaranteed.', copyrightText: '© {year} ShopVibe. All rights reserved. Made with 💜 in Bangladesh', paymentMethods: ['Cash on Delivery'] as string[], quickLinks: [{ label: 'Shop', href: '/' }, { label: 'Checkout', href: '/checkout' }, { label: 'Wishlist', href: '/wishlist' }] });
     const [sSeo, setSSeo] = useState({ siteTitle: 'ShopVibe — Premium E-Commerce Bangladesh', metaDescription: '', keywords: '', ogImage: '', siteUrl: '' });
     const [sAppearance, setSAppearance] = useState({ productsPerRow: 4, defaultTheme: 'dark' });
     // Analytics
@@ -360,7 +360,7 @@ export default function AdminPage() {
         const w = window.open('', '_blank', 'width=900,height=700');
         if (!w) return;
         const subtotal = o.products.reduce((s, p) => s + p.price * p.quantity, 0);
-        const payMethodLabel: Record<string, string> = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', cod: 'Cash on Delivery' };
+        const payMethodLabel: Record<string, string> = { nagad: 'Nagad', rocket: 'Rocket', cod: 'Cash on Delivery' };
         const payMethod = payMethodLabel[o.paymentMethod || 'cod'] || o.paymentMethod?.toUpperCase() || 'N/A';
         w.document.write(`<!DOCTYPE html><html><head><title>Invoice #${o.orderNumber}</title><style>
             *{margin:0;padding:0;box-sizing:border-box}
@@ -409,8 +409,7 @@ export default function AdminPage() {
             <div class="info-grid">
                 <div class="info-box"><div class="label">Method</div><div class="value">${payMethod}</div></div>
                 ${o.paymentMethod !== 'cod' ? `
-                <div class="info-box"><div class="label">${payMethod} Number</div><div class="value">${o.bkashNumber || '—'}</div></div>
-                <div class="info-box full"><div class="label">Transaction ID</div><div class="value" style="font-family:monospace">${o.transactionId || '—'}</div></div>
+                <div class="info-box"><div class="label">Payment Status</div><div class="value capitalize">${o.status}</div></div>
                 ` : '<div class="info-box"><div class="label">Collection</div><div class="value">Collect on Delivery</div></div>'}
             </div>
 
@@ -724,14 +723,12 @@ export default function AdminPage() {
                                             <div>
                                                 <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Payment</span>
                                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">{o.paymentMethod || 'COD'}</span>
-                                                {o.paymentMethod !== 'cod' && o.transactionId && (
+                                                {o.paymentMethod !== 'cod' && (
                                                     <div className="mt-1.5 bg-black/20 rounded p-1.5 outline outline-1 outline-white/5">
-                                                        <div className="text-[10px] text-gray-500 flex justify-between"><span>A/C:</span><span className="text-gray-300 font-mono">{o.bkashNumber}</span></div>
                                                         <div className="text-[10px] text-gray-500 flex justify-between items-center mt-0.5">
-                                                            <span>TrxID:</span>
+                                                            <span>Status:</span>
                                                             <div className="flex items-center gap-1">
-                                                                <span className="text-violet-300 font-mono">{o.transactionId}</span>
-                                                                <button onClick={() => copyText(o.transactionId)} className="hover:bg-white/10 p-0.5 rounded"><Copy className="w-2.5 h-2.5" /></button>
+                                                                <span className="text-violet-300 font-mono capitalize">{o.status}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1099,7 +1096,7 @@ export default function AdminPage() {
                             <div><label className="text-sm text-gray-400 mb-1 block">Copyright Text ({'{year}'})</label><input type="text" value={sFooter.copyrightText} onChange={e => setSFooter({ ...sFooter, copyrightText: e.target.value })} className="input-field" /></div>
                             <div>
                                 <label className="text-sm text-gray-400 mb-1 block">Payment Methods (csv)</label>
-                                <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="input-field" placeholder="Bkash, Nagad" />
+                                <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="input-field" placeholder="Cash on Delivery" />
                             </div>
                             <div><label className="text-sm text-gray-400 mb-1 block">Footer Description</label><textarea value={sFooter.description} onChange={e => setSFooter({ ...sFooter, description: e.target.value })} rows={3} className="input-field resize-none" /></div>
                         </div>

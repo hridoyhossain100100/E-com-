@@ -63,20 +63,16 @@ export default function ProductDetailsClient({
     const [customerName, setCustomerName] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerAddress, setCustomerAddress] = useState("");
-    const [bkashNumber, setBkashNumber] = useState("");
-    const [transactionId, setTransactionId] = useState("");
     const [orderLoading, setOrderLoading] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [couponCode, setCouponCode] = useState("");
     const [couponApplied, setCouponApplied] = useState<{ code: string; discountPercent: number; maxDiscount: number } | null>(null);
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
-    const [paymentMethod, setPaymentMethod] = useState("bkash");
     const [shippingZone, setShippingZone] = useState(initialShipping.zones?.[0]?.id || "dhaka");
     const [shippingCost, setShippingCost] = useState(initialShipping.zones?.[0]?.cost || 60);
     const [shippingZones, setShippingZones] = useState(initialShipping.zones || [{ id: "dhaka", label: "ঢাকার ভেতরে", cost: 60 }, { id: "outside", label: "ঢাকার বাইরে", cost: 120 }]);
     const [selectedCity, setSelectedCity] = useState("");
-    const [orderType, setOrderType] = useState<"cod" | "pay">("cod");
     const [showDeliveryZone, setShowDeliveryZone] = useState(initialShipping.showDeliveryZone !== undefined ? initialShipping.showDeliveryZone : true);
     const [quantity, setQuantity] = useState(1);
     const [showStickyBtn, setShowStickyBtn] = useState(true);
@@ -244,10 +240,6 @@ export default function ProductDetailsClient({
             setMessage({ type: "error", text: "Please fill all required delivery details." });
             return;
         }
-        if (orderType === "pay" && (!bkashNumber || !transactionId)) {
-            setMessage({ type: "error", text: "Please provide payment details." });
-            return;
-        }
 
         setOrderLoading(true);
         setMessage(null);
@@ -259,8 +251,6 @@ export default function ProductDetailsClient({
                 customerName,
                 customerPhone,
                 customerAddress: `${selectedCity}, ${customerAddress}`,
-                bkashNumber: orderType === "pay" ? bkashNumber : "",
-                transactionId: orderType === "pay" ? transactionId : "",
                 couponCode: couponApplied?.code || null,
                 discountAmount: discountAmount || 0,
                 paymentMethod: "cod",
@@ -272,7 +262,7 @@ export default function ProductDetailsClient({
             // Redirect to success page or show success state internally
             trackPurchase(product._id, totalAmount);
             setMessage({ type: "success", text: "🎉 Order Successful! We will contact you shortly." });
-            setCustomerName(""); setCustomerPhone(""); setCustomerAddress(""); setBkashNumber(""); setTransactionId(""); setDraftOrderId(null);
+            setCustomerName(""); setCustomerPhone(""); setCustomerAddress(""); setDraftOrderId(null);
         } catch (err: any) {
             setMessage({ type: "error", text: err.response?.data?.message || "Failed to place order." });
         } finally {

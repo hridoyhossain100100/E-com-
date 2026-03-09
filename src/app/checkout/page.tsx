@@ -29,15 +29,12 @@ function CheckoutForm() {
     const [customerName, setCustomerName] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerAddress, setCustomerAddress] = useState("");
-    const [bkashNumber, setBkashNumber] = useState("");
-    const [transactionId, setTransactionId] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [couponCode, setCouponCode] = useState("");
     const [couponApplied, setCouponApplied] = useState<{ code: string; discountPercent: number; maxDiscount: number } | null>(null);
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
-    const [paymentMethod, setPaymentMethod] = useState("bkash");
     const [shippingZone, setShippingZone] = useState("dhaka");
     const [shippingCost, setShippingCost] = useState(0);
     const [shippingZones, setShippingZones] = useState([{ id: "dhaka", label: "ঢাকার ভেতরে", cost: 60 }, { id: "outside", label: "ঢাকার বাইরে", cost: 120 }]);
@@ -164,10 +161,6 @@ function CheckoutForm() {
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
-        if (orderType === "pay" && (!bkashNumber || !transactionId)) {
-            setMessage({ type: "error", text: "Please provide payment details." });
-            return;
-        }
 
         setLoading(true);
         setMessage(null);
@@ -179,8 +172,6 @@ function CheckoutForm() {
                 customerName,
                 customerPhone,
                 customerAddress: `${selectedCity}, ${customerAddress}`,
-                bkashNumber: orderType === "pay" ? bkashNumber : "",
-                transactionId: orderType === "pay" ? transactionId : "",
                 couponCode: couponApplied?.code || null,
                 discountAmount: discountAmount || 0,
                 paymentMethod: "cod",
@@ -196,8 +187,6 @@ function CheckoutForm() {
             setCustomerName("");
             setCustomerPhone("");
             setCustomerAddress("");
-            setBkashNumber("");
-            setTransactionId("");
         } catch (err: any) {
             setMessage({ type: "error", text: err.response?.data?.message || "Failed to place order." });
         } finally {
