@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
-import BottomNav from "./components/BottomNav";
 import MarketingScripts, { GTMNoScript } from "./components/MarketingScripts";
 import LiveVisitorTrackerWrapper from "./components/LiveVisitorTrackerWrapper";
 import connectToDatabase from "@/lib/mongodb";
@@ -11,7 +10,6 @@ import Settings from "@/models/Settings";
 // @web-performance-optimization: Lazy load non-critical client components
 const LiveVisitorTracker = LiveVisitorTrackerWrapper;
 
-<<<<<<< HEAD
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -86,17 +84,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-=======
-export const metadata: Metadata = {
-  title: "ShopVibe — Premium E-Commerce",
-  description: "Your one-stop shop for quality products at the best prices. Shop with confidence. Enjoy Cash on Delivery.",
-  keywords: "shop, ecommerce, online shopping, bangladesh",
-  openGraph: {
-    title: "ShopVibe — Premium E-Commerce",
-    description: "Curated collection of premium products. Shop with confidence.",
-    type: "website",
-  },
->>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
@@ -112,8 +99,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <GTMNoScript />
         <LiveVisitorTracker />
         <Navbar initialSettings={await getSettings()} />
-        <main className="pb-16 md:pb-0">{children}</main>
-        <BottomNav />
+        <main>{children}</main>
       </body>
     </html>
   );
