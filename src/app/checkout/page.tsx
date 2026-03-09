@@ -277,11 +277,7 @@ function CheckoutForm() {
                         </div>
                     </section>
 
-<<<<<<< HEAD
                     {/* Payment Methods Removed */}
-=======
-
->>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
                 </div>
 
                 {/* RIGHT COLUMN: Sticky Order Summary & Quick Add */}
