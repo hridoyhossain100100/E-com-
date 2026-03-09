@@ -197,11 +197,11 @@ function CheckoutForm() {
     const availableProducts = products.filter(p => !selectedProducts.some(sp => sp.productId === p._id)).slice(0, 4);
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 pb-28 lg:pb-16">
 
             {/* Minimal Header */}
             <div className="mb-8 lg:mb-12 text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 mb-4">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     <span className="text-sm font-medium text-emerald-300">Secure Checkout 256-bit SSL</span>
                 </div>
@@ -233,43 +233,43 @@ function CheckoutForm() {
                             {/* Name & Phone */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
-                                    <label htmlFor="customerName" className="text-sm font-medium text-[var(--text-muted)] ml-1">Full Name</label>
+                                    <label htmlFor="customerName" className="text-sm font-medium text-slate-400 ml-1">Full Name</label>
                                     <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input id="customerName" type="text" autoComplete="name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all placeholder:text-[var(--input-placeholder)]" required />
+                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input id="customerName" type="text" autoComplete="name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400" required />
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label htmlFor="customerPhone" className="text-sm font-medium text-[var(--text-muted)] ml-1">Phone Number</label>
+                                    <label htmlFor="customerPhone" className="text-sm font-medium text-slate-400 ml-1">Phone Number</label>
                                     <div className="relative">
-                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all placeholder:text-[var(--input-placeholder)]" required />
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400" required />
                                     </div>
                                 </div>
                             </div>
 
                             {/* City / District */}
                             <div className="space-y-1.5">
-                                <label htmlFor="selectedCity" className="text-sm font-medium text-[var(--text-muted)] ml-1">City / District</label>
+                                <label htmlFor="selectedCity" className="text-sm font-medium text-slate-400 ml-1">City / District</label>
                                 <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <select id="selectedCity" value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all appearance-none cursor-pointer" required>
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <select id="selectedCity" value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all appearance-none cursor-pointer" required>
                                         <option value="" disabled>Select your district...</option>
                                         {bdCities.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
-                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none rotate-90" />
+                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
                                 </div>
                             </div>
 
                             {/* Address */}
                             <div className="space-y-1.5">
-                                <label htmlFor="customerAddress" className="text-sm font-medium text-[var(--text-muted)] ml-1">Detailed Address (House/Road/Area)</label>
-                                <textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="e.g. House 12, Road 4, Block C, Banani" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 text-[var(--input-text)] outline-none transition-all placeholder:text-[var(--input-placeholder)] resize-none" rows={3} required />
+                                <label htmlFor="customerAddress" className="text-sm font-medium text-slate-400 ml-1">Detailed Address (House/Road/Area)</label>
+                                <textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="e.g. House 12, Road 4, Block C, Banani" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-3 text-white outline-none transition-all placeholder:text-slate-400 resize-none" rows={3} required />
                             </div>
 
                             {/* Free Home Delivery Notice */}
                             <div className="pt-5 border-t border-gray-800">
-                                <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/40 shadow-sm shadow-emerald-500/5">
                                     <Truck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                                     <span className="text-sm font-medium text-emerald-300">🚚 Free Home Delivery on all orders!</span>
                                 </div>
@@ -300,13 +300,13 @@ function CheckoutForm() {
                                 ) : (
                                     selectedProducts.map((p) => (
                                         <div key={p.productId} className="flex gap-4 group">
-                                            <div className="w-16 h-16 rounded-lg bg-gray-800 border border-gray-700 overflow-hidden flex-shrink-0 relative">
+                                            <div className="w-16 h-16 rounded-lg bg-slate-800 border border-slate-600 overflow-hidden flex-shrink-0 relative">
                                                 {p.imageUrl ? (
                                                     <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="64px" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-600"><ShoppingCart className="w-6 h-6" /></div>
                                                 )}
-                                                <div className="absolute top-0 right-0 w-5 h-5 bg-violet-600 text-white text-[10px] font-bold flex items-center justify-center rounded-bl-lg">
+                                                <div className="absolute top-0 right-0 w-5 h-5 bg-[#8B5CF6] text-white text-[10px] font-bold flex items-center justify-center rounded-bl-lg">
                                                     {p.quantity}
                                                 </div>
                                             </div>
@@ -315,7 +315,7 @@ function CheckoutForm() {
                                                 <p className="text-xs text-violet-400 font-semibold mb-2">৳{(p.price * p.quantity).toLocaleString()}</p>
 
                                                 <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1 bg-black/40 border border-gray-800 rounded-md p-1 w-fit">
+                                                    <div className="flex items-center gap-1 bg-slate-800 border border-slate-600 rounded-md p-1 w-fit">
                                                         <button type="button" onClick={() => updateQuantity(p.productId, -1)} aria-label="Decrease quantity" className="p-2 hover:text-white text-gray-400 transition-colors"><Minus className="w-3.5 h-3.5" /></button>
                                                         <span className="text-xs font-medium w-6 text-center">{p.quantity}</span>
                                                         <button type="button" onClick={() => updateQuantity(p.productId, 1)} aria-label="Increase quantity" className="p-2 hover:text-white text-gray-400 transition-colors"><Plus className="w-3.5 h-3.5" /></button>
@@ -331,16 +331,16 @@ function CheckoutForm() {
                             </div>
 
                             {/* Coupon Section */}
-                            <div className="pt-5 border-t border-gray-800 mb-5 relative">
+                            <div className="pt-5 border-t border-slate-700/50 mb-5 relative">
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
-                                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Gift card or discount code" className="w-full bg-black/40 border border-gray-800 focus:border-violet-500 rounded-xl px-4 py-2.5 pl-9 text-white outline-none transition-all placeholder:text-gray-600 text-sm font-mono" disabled={!!couponApplied} />
+                                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Gift card or discount code" className="w-full bg-slate-800 border border-slate-600 focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-9 text-white outline-none transition-all placeholder:text-slate-500 text-sm font-mono" disabled={!!couponApplied} />
                                     </div>
                                     {couponApplied ? (
-                                        <button type="button" onClick={() => { setCouponApplied(null); setCouponCode(""); }} className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-xl text-sm font-medium transition-all">Remove</button>
+                                        <button type="button" onClick={() => { setCouponApplied(null); setCouponCode(""); }} className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-md text-sm font-medium transition-all">Remove</button>
                                     ) : (
-                                        <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="px-4 py-2.5 bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 disabled:opacity-50 rounded-xl text-sm font-medium transition-all">
+                                        <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="px-4 py-2.5 bg-slate-800 border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 rounded-md text-sm font-medium transition-all">
                                             {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
                                         </button>
                                     )}
@@ -379,10 +379,9 @@ function CheckoutForm() {
                             <button
                                 type="submit"
                                 disabled={loading || selectedProducts.length === 0}
-                                className="w-full relative group overflow-hidden rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full relative group overflow-hidden rounded-md disabled:opacity-50 disabled:cursor-not-allowed bg-[#8B5CF6] hover:bg-[#7C3AED] transition-colors"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 transition-all duration-300 group-hover:scale-[1.02]"></div>
-                                <div className="relative px-6 py-4 flex items-center justify-center gap-2 text-white font-bold text-lg">
+                                <div className="relative px-6 py-3.5 flex items-center justify-center gap-2 text-white font-medium text-base">
                                     {loading ? (
                                         <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
                                     ) : (

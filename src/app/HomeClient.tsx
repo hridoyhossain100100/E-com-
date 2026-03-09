@@ -29,6 +29,72 @@ function SkeletonCard() {
   );
 }
 
+interface ProductCardProps {
+  product: Product;
+  isWishlisted: boolean;
+  onWishlist: (id: string) => void;
+  onShare: (product: Product) => void;
+  onAddToCart: (product: Product) => void;
+  isNewArrival?: boolean;
+  animationDelay?: string;
+}
+
+function ProductCard({ product: p, isWishlisted, onWishlist, onShare, onAddToCart, isNewArrival, animationDelay }: ProductCardProps) {
+  return (
+    <div className="glass-card overflow-hidden group animate-fade-in-up cursor-pointer" style={{ animationDelay }}>
+      <div className="relative overflow-hidden w-full h-48 sm:h-56">
+        <Link href={`/product/${p._id}`}>
+          <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes={isNewArrival ? "(max-width: 768px) 50vw, 25vw" : "(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"} priority={isNewArrival} />
+        </Link>
+        {/* Wishlist + Share buttons */}
+        <div className="absolute top-2 right-2 flex gap-1.5">
+          <button onClick={(e) => { e.preventDefault(); onWishlist(p._id); }} className={`p-2 rounded-full backdrop-blur-sm transition-all ${isWishlisted ? "bg-pink-500 text-white" : "bg-black/40 text-white hover:bg-pink-500/80"}`}>
+            <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
+          </button>
+          <button onClick={(e) => { e.preventDefault(); onShare(p); }} className="p-2 rounded-full bg-black/40 text-white hover:bg-violet-500/80 backdrop-blur-sm transition-all">
+            <Share2 className="w-4 h-4" />
+          </button>
+        </div>
+        {/* Badges */}
+        {isNewArrival ? (
+          <span className="absolute top-2 left-2 px-2 py-0.5 bg-fuchsia-500 text-white text-[10px] font-bold rounded-full uppercase shadow-md shadow-fuchsia-500/20">New</span>
+        ) : (
+          <>
+            {(p.stock || 0) === 0 && <span className="absolute top-2 left-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full">Out of Stock</span>}
+            {p.category && p.category !== "General" && (p.stock || 0) > 0 && <span className="absolute top-2 left-2 px-2 py-0.5 bg-violet-500/80 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">{p.category}</span>}
+          </>
+        )}
+      </div>
+      <div className="p-4 sm:p-5 flex flex-col min-h-[140px] flex-1 justify-between">
+        <div>
+          <Link href={`/product/${p._id}`}>
+            <h3 className="font-semibold text-sm sm:text-base mb-1 truncate hover:text-violet-400 transition-colors">{p.name}</h3>
+          </Link>
+          <p className="text-xs text-gray-500 mb-3 line-clamp-2">{p.description}</p>
+        </div>
+        <div className="flex flex-col gap-3 mt-auto">
+          <span className="text-violet-400 font-bold text-lg leading-none">৳{p.price.toLocaleString()}</span>
+          <div className="flex gap-2">
+            {(p.stock || 0) > 0 ? (
+              <>
+                <button onClick={(e) => { e.preventDefault(); onAddToCart(p); }} className="flex-1 px-3 py-2 bg-transparent border border-[#8B5CF6] text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center">
+                  Add to Cart
+                </button>
+                <Link href={`/checkout?product=${p._id}&name=${encodeURIComponent(p.name)}&price=${p.price}`}
+                  className="flex-1 px-3 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center shadow-md shadow-violet-500/20">
+                  Buy Now
+                </Link>
+              </>
+            ) : (
+              <span className="w-full text-center px-3 py-1.5 bg-gray-800 rounded-lg text-xs font-medium text-gray-500">Sold Out</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomeClient({ initialProducts = [], initialSettings = {} }: { initialProducts?: Product[], initialSettings?: any }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
@@ -64,6 +130,18 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
     const text = `Check out ${p.name} for ৳${p.price.toLocaleString()} on ShopVibe! ${url}`;
     if (navigator.share) { navigator.share({ title: p.name, text, url }); }
     else { window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank"); }
+  };
+
+  const addToCart = (p: Product) => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existing = cart.find((item: any) => item.productId === p._id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({ productId: p._id, name: p.name, price: p.price, quantity: 1, imageUrl: p.imageUrls?.[0] || "" });
+    }
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cart-updated"));
   };
 
   const categories = ["All", ...Array.from(new Set(products.map(p => p.category || "General")))];
@@ -117,10 +195,10 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
             </p>
             {/* Search Bar */}
             <div className="max-w-lg mx-auto relative mt-8">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search products..."
-                className="w-full pl-12 pr-4 py-3.5 text-base bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-300 focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 backdrop-blur-sm transition-all"
+                className="w-full pl-12 pr-4 py-3.5 text-base bg-slate-800/80 border border-slate-600 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent backdrop-blur-md transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
               />
             </div>
           </div>
@@ -149,17 +227,17 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
               </h2>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {newArrivals.map(p => (
-                <Link key={p._id} href={`/product/${p._id}`} className="glass-card overflow-hidden group cursor-pointer">
-                  <div className="relative overflow-hidden w-full h-40 sm:h-48">
-                    <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 50vw, 25vw" priority={true} />
-                    <span className="absolute top-2 left-2 px-2 py-0.5 bg-fuchsia-500 text-white text-[10px] font-bold rounded-full uppercase">New</span>
-                  </div>
-                  <div className="p-3 sm:p-4">
-                    <h3 className="font-medium text-[var(--foreground)] text-sm sm:text-base truncate">{p.name}</h3>
-                    <p className="text-violet-600 dark:text-violet-400 font-bold mt-1">৳{p.price.toLocaleString()}</p>
-                  </div>
-                </Link>
+              {newArrivals.map((p, i) => (
+                <ProductCard
+                  key={p._id}
+                  product={p}
+                  isWishlisted={wishlist.has(p._id)}
+                  onWishlist={toggleWish}
+                  onShare={shareProduct}
+                  onAddToCart={addToCart}
+                  isNewArrival={true}
+                  animationDelay={`${i * 0.05}s`}
+                />
               ))}
             </div>
           </div>
@@ -181,42 +259,15 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
         ) : (
           <div className={`grid gap-4 sm:gap-6 ${filtered.length === 1 ? "grid-cols-1 max-w-md mx-auto" : "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`}>
             {filtered.map((p, i) => (
-              <div key={p._id} className="glass-card overflow-hidden group animate-fade-in-up cursor-pointer" style={{ animationDelay: `${i * 0.05}s` }}>
-                <div className="relative overflow-hidden w-full h-48 sm:h-56">
-                  <Link href={`/product/${p._id}`}>
-                    <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw" />
-                  </Link>
-                  {/* Wishlist + Share buttons */}
-                  <div className="absolute top-2 right-2 flex gap-1.5">
-                    <button onClick={() => toggleWish(p._id)} className={`p-2 rounded-full backdrop-blur-sm transition-all ${wishlist.has(p._id) ? "bg-pink-500 text-white" : "bg-black/40 text-white hover:bg-pink-500/80"}`}>
-                      <Heart className={`w-4 h-4 ${wishlist.has(p._id) ? "fill-current" : ""}`} />
-                    </button>
-                    <button onClick={() => shareProduct(p)} className="p-2 rounded-full bg-black/40 text-white hover:bg-violet-500/80 backdrop-blur-sm transition-all">
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {/* Badges */}
-                  {(p.stock || 0) === 0 && <span className="absolute top-2 left-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full">Out of Stock</span>}
-                  {p.category && p.category !== "General" && (p.stock || 0) > 0 && <span className="absolute top-2 left-2 px-2 py-0.5 bg-violet-500/80 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">{p.category}</span>}
-                </div>
-                <div className="p-4 sm:p-5">
-                  <Link href={`/product/${p._id}`}>
-                    <h3 className="font-semibold text-sm sm:text-base mb-1 truncate hover:text-violet-400 transition-colors">{p.name}</h3>
-                  </Link>
-                  <p className="text-xs text-gray-500 mb-3 line-clamp-2">{p.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-violet-400 font-bold text-lg">৳{p.price.toLocaleString()}</span>
-                    {(p.stock || 0) > 0 ? (
-                      <Link href={`/checkout?product=${p._id}&name=${encodeURIComponent(p.name)}&price=${p.price}`}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg text-xs sm:text-sm font-medium text-white hover:opacity-90 transition-opacity">
-                        Buy Now <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    ) : (
-                      <span className="px-3 py-1.5 bg-gray-800 rounded-lg text-xs font-medium text-gray-500">Sold Out</span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <ProductCard
+                key={p._id}
+                product={p}
+                isWishlisted={wishlist.has(p._id)}
+                onWishlist={toggleWish}
+                onShare={shareProduct}
+                onAddToCart={addToCart}
+                animationDelay={`${i * 0.05}s`}
+              />
             ))}
           </div>
         )}

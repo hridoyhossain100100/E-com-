@@ -619,38 +619,46 @@ export default function ProductDetailsClient({
                                     </div>
 
                                     <div className="space-y-5">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                             <div className="space-y-1.5">
-                                                <label htmlFor="customerName" className="text-sm font-medium text-[var(--text-muted)] ml-1">Full Name</label>
+                                                <label htmlFor="customerName" className="text-sm font-medium text-slate-400 ml-1">Full Name</label>
                                                 <div className="relative">
-                                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                    <input id="customerName" type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all" required />
+                                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                    <input id="customerName" type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400" required />
                                                 </div>
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label htmlFor="customerPhone" className="text-sm font-medium text-[var(--text-muted)] ml-1">Phone Number</label>
+                                                <label htmlFor="customerPhone" className="text-sm font-medium text-slate-400 ml-1">Phone Number</label>
                                                 <div className="relative">
-                                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                    <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all" required />
+                                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                    <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400" required />
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-1.5">
-                                            <label htmlFor="selectedCity" className="text-sm font-medium text-[var(--text-muted)] ml-1">City / District</label>
+                                            <label htmlFor="selectedCity" className="text-sm font-medium text-slate-400 ml-1">City / District</label>
                                             <div className="relative">
-                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                <select id="selectedCity" value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all appearance-none cursor-pointer" required>
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                <select id="selectedCity" value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all appearance-none cursor-pointer" required>
                                                     <option value="" disabled>Select your district...</option>
                                                     {bdCities.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
-                                                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none rotate-90" />
+                                                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
                                             </div>
                                         </div>
 
                                         <div className="space-y-1.5">
-                                            <label htmlFor="customerAddress" className="text-sm font-medium text-[var(--text-muted)] ml-1">Detailed Address</label>
-                                            <textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="House 12, Road 4, Area" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 text-[var(--input-text)] outline-none transition-all resize-none" rows={2} required />
+                                            <label htmlFor="customerAddress" className="text-sm font-medium text-slate-400 ml-1">Detailed Address (House/Road/Area)</label>
+                                            <textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="e.g. House 12, Road 4, Block C" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-3 text-white outline-none transition-all placeholder:text-slate-400 resize-none" rows={3} required />
+                                        </div>
+
+                                        {/* Free Home Delivery Notice */}
+                                        <div className="pt-5 border-t border-gray-800">
+                                            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/40 shadow-sm shadow-emerald-500/5">
+                                                <Truck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                                <span className="text-sm font-medium text-emerald-300">🚚 Free Home Delivery on all orders!</span>
+                                            </div>
                                         </div>
 
 
@@ -696,13 +704,13 @@ export default function ProductDetailsClient({
                                         <div className="mb-5 relative">
                                             <div className="flex gap-2">
                                                 <div className="relative flex-1">
-                                                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                                    <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Discount code" className="w-full bg-black/40 border border-gray-700 focus:border-violet-500 rounded-xl px-4 py-2.5 pl-9 text-white outline-none text-sm font-mono" disabled={!!couponApplied} />
+                                                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                    <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Discount code" className="w-full bg-slate-800 border border-slate-600 focus:border-[#8B5CF6] focus:ring-1 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-9 text-white outline-none transition-all placeholder:text-slate-500 text-sm font-mono" disabled={!!couponApplied} />
                                                 </div>
                                                 {couponApplied ? (
-                                                    <button type="button" onClick={() => { setCouponApplied(null); setCouponCode(""); }} className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all">Remove</button>
+                                                    <button type="button" onClick={() => { setCouponApplied(null); setCouponCode(""); }} className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-md text-sm font-medium transition-all">Remove</button>
                                                 ) : (
-                                                    <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="px-4 py-2.5 bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 disabled:opacity-50 rounded-xl text-sm font-medium transition-all">
+                                                    <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="px-4 py-2.5 bg-slate-800 border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 rounded-md text-sm font-medium transition-all">
                                                         {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
                                                     </button>
                                                 )}
@@ -742,10 +750,9 @@ export default function ProductDetailsClient({
                                         <button
                                             type="submit"
                                             disabled={orderLoading || (product?.stock || 0) <= 0}
-                                            className="w-full relative group overflow-hidden rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full relative group overflow-hidden rounded-md disabled:opacity-50 disabled:cursor-not-allowed bg-[#8B5CF6] hover:bg-[#7C3AED] transition-colors"
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 transition-all duration-300 group-hover:scale-[1.02]"></div>
-                                            <div className="relative px-6 py-4 flex items-center justify-center gap-2 text-white font-bold text-lg">
+                                            <div className="relative px-6 py-3.5 flex items-center justify-center gap-2 text-white font-medium text-base">
                                                 {orderLoading ? (
                                                     <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
                                                 ) : (
@@ -772,15 +779,15 @@ export default function ProductDetailsClient({
 
             {/* Mobile Sticky Buy Now Bar Refined: Button only on right */}
             {(product.stock || 0) > 0 && showStickyBtn && (
-                <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden animate-in slide-in-from-bottom-5 pointer-events-none">
+                <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden animate-in slide-in-from-bottom-5 pointer-events-none pb-20">
                     <div className="flex items-center justify-end gap-3 px-4 py-3 pointer-events-auto">
                         <button
                             onClick={() => {
                                 trackAddToCart({ id: product._id, name: product.name, price: product.price, category: product.category });
                                 scrollToCheckout();
                             }}
-                            className="flex-shrink-0 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold text-base px-6 py-3 rounded-xl shadow-lg shadow-violet-500/30 flex items-center gap-2 transition-all active:scale-95">
-                            <ShoppingBag className="w-5 h-5" /> Buy Now
+                            className="flex-shrink-0 bg-[#8B5CF6] hover:bg-[#7C3AED] transition-colors text-white font-medium text-sm px-5 py-2.5 rounded-md shadow-lg shadow-violet-500/30 flex items-center gap-2 active:scale-95">
+                            <ShoppingBag className="w-4 h-4" /> Buy Now
                         </button>
                     </div>
                 </div>

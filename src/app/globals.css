@@ -18,18 +18,18 @@
 }
 
 .dark {
-  --background: #030712;
-  --foreground: #f9fafb;
-  --card-bg: rgba(17, 24, 39, 0.6);
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --card-bg: #1E293B;
   --card-border: rgba(75, 85, 99, 0.3);
-  --input-bg: rgba(17, 24, 39, 0.6);
-  --input-border: rgba(75, 85, 99, 0.4);
-  --input-text: #ffffff;
-  --input-placeholder: #6b7280;
-  --text-muted: #9ca3af;
-  --glass-hover: rgba(17, 24, 39, 0.8);
+  --input-bg: #1E293B;
+  --input-border: #475569;
+  --input-text: #F8FAFC;
+  --input-placeholder: #94A3B8;
+  --text-muted: #94A3B8;
+  --glass-hover: #334155;
   /* Scrollbar */
-  --scroll-track: #111827;
+  --scroll-track: #0F172A;
   --scroll-thumb: #374151;
   --scroll-thumb-hover: #4b5563;
 }
@@ -242,17 +242,22 @@ body {
 .input-field {
   background: var(--input-bg);
   border: 1px solid var(--input-border);
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  /* rounded-md */
+  padding: 0.5rem 0.75rem;
+  /* px-3 py-2 */
   color: var(--input-text);
   width: 100%;
-  transition: all 0.3s ease;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   outline: none;
+  font-size: 0.875rem;
+  /* text-sm */
 }
 
 .input-field:focus {
-  border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #8B5CF6;
+  /* focus:ring-2 focus:ring-[#8B5CF6] */
 }
 
 .input-field::placeholder {
@@ -261,30 +266,60 @@ body {
 
 /* Button styles */
 .btn-primary {
-  background: linear-gradient(135deg, #7c3aed, #c026d3);
+  background: #8B5CF6;
   color: white;
-  padding: 0.75rem 2rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  /* rounded-md */
+  font-weight: 500;
+  font-size: 0.875rem;
+  /* text-sm */
+  transition: background-color 0.15s ease-in-out;
   border: none;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+  background: #7C3AED;
 }
 
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #8B5CF6;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  /* rounded-md */
+  font-weight: 500;
+  font-size: 0.875rem;
+  /* text-sm */
+  transition: background-color 0.15s ease-in-out;
+  border: 1px solid #8B5CF6;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary:hover {
+  background: rgba(139, 92, 246, 0.1);
+  /* hover:bg-[#8B5CF6]/10 */
+}
+
+.btn-secondary:active {
+  transform: translateY(1px);
 }
 
 /* ─── Light Mode ─── */
@@ -529,8 +564,8 @@ body {
 
 /* ─── OLED Dark Mode Battery Optimization ─── */
 .dark {
-  /* Use true black for maximum OLED battery savings */
-  --background: #000000;
+  /* Use professional dark slate instead of true black */
+  --background: #0F172A;
 }
 
 /* ─── Improved Light Mode Contrast ─── */
