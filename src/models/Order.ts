@@ -76,7 +76,6 @@ const orderSchema = new mongoose.Schema({
         default: Date.now
     }
 });
-
 // @database-optimizer: Add indexes for common query patterns
 orderSchema.index({ orderNumber: 1 }, { unique: true }); // Fast order lookup by number
 orderSchema.index({ customerPhone: 1 }); // Customer order history by phone
@@ -85,6 +84,7 @@ orderSchema.index({ createdAt: -1 }); // Sort by newest (admin dashboard)
 orderSchema.index({ consignmentId: 1 }); // Pathao tracking lookup
 // Index for cleaning up old incomplete orders easily
 orderSchema.index({ createdAt: 1 }, { expireAfterSeconds: 14 * 24 * 60 * 60, partialFilterExpression: { status: 'incomplete' } });
+
 const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
 
 export default Order;

@@ -18,7 +18,8 @@ import React from 'react';
 
 // Types
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
-interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; videoUrl?: string; category: string; stock: number; variants: Variant[]; createdAt?: string; }
+interface DescriptionSection { _id?: string; title: string; content: string; }
+interface Product { _id: string; name: string; price: number; description: string; descriptionSections?: DescriptionSection[]; imageUrls: string[]; videoUrl?: string; category: string; stock: number; variants: Variant[]; createdAt?: string; }
 interface OrderProduct { productId: string; name: string; price: number; quantity: number; }
 interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; shippingZone?: string; shippingCost?: number; consignmentId?: string; pathaoStatus?: string; }
 interface Stats { totalOrders: number; totalRevenue: number; totalProducts: number; }
@@ -102,6 +103,7 @@ export default function AdminPage() {
     const [pName, setPName] = useState(""); const [pPrice, setPPrice] = useState(""); const [pDesc, setPDesc] = useState("");
     const [pCat, setPCat] = useState("General"); const [pStock, setPStock] = useState(""); const [pImages, setPImages] = useState<File[]>([]);
     const [pPreviews, setPPreviews] = useState<string[]>([]); const [pVariants, setPVariants] = useState<Variant[]>([]);
+    const [pDescriptionSections, setPDescriptionSections] = useState<DescriptionSection[]>([]);
     const [pVideo, setPVideo] = useState("");
     const [pMsg, setPMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -116,6 +118,7 @@ export default function AdminPage() {
     const [editP, setEditP] = useState<Product | null>(null);
     const [eName, setEName] = useState(""); const [ePrice, setEPrice] = useState(""); const [eDesc, setEDesc] = useState("");
     const [eCat, setECat] = useState(""); const [eStock, setEStock] = useState(""); const [eVariants, setEVariants] = useState<Variant[]>([]);
+    const [eDescriptionSections, setEDescriptionSections] = useState<DescriptionSection[]>([]);
     const [eImages, setEImages] = useState<string[]>([]); const editFileRef = useRef<HTMLInputElement>(null);
     const [eVideo, setEVideo] = useState("");
 
@@ -255,6 +258,7 @@ export default function AdminPage() {
         fd.append("category", pCat); fd.append("stock", pStock || "0");
         if (pVideo) fd.append("videoUrl", pVideo);
         if (pVariants.length > 0) fd.append("variants", JSON.stringify(pVariants));
+        if (pDescriptionSections.length > 0) fd.append("descriptionSections", JSON.stringify(pDescriptionSections));
         pImages.forEach(img => fd.append("images", img));
         try {
             await axios.post(`/api/products`, fd, { headers: { "Content-Type": "multipart/form-data" } });
@@ -281,10 +285,27 @@ export default function AdminPage() {
     const toggleSelectAll = () => { if (selectedIds.size === pagedProducts.length) setSelectedIds(new Set()); else setSelectedIds(new Set(pagedProducts.map(p => p._id))); };
 
     // ─── Edit Product ───
-    const openEdit = (p: Product) => { setEditP(p); setEName(p.name); setEPrice(String(p.price)); setEDesc(p.description); setECat(p.category || "General"); setEStock(String(p.stock || 0)); setEVariants(p.variants || []); setEImages([...p.imageUrls]); setEVideo(p.videoUrl || ""); };
+    const openEdit = (p: Product) => {
+        setEditP(p);
+        setEName(p.name);
+        setEPrice(String(p.price));
+        setEDesc(p.description);
+        setECat(p.category || "General");
+        setEStock(String(p.stock || 0));
+        setEVariants(p.variants || []);
+        setEDescriptionSections(p.descriptionSections || []);
+        setEImages([...p.imageUrls]);
+        setEVideo(p.videoUrl || "");
+    };
     const saveEdit = async () => {
         if (!editP) return;
-        try { await axios.put(`/api/products/${editP._id}`, { name: eName, price: ePrice, description: eDesc, category: eCat, stock: eStock, variants: eVariants, imageUrls: eImages, videoUrl: eVideo }); showToast("success", "Updated!"); setEditP(null); fetchProducts(); fetchStats(); }
+        try {
+            await axios.put(`/api/products/${editP._id}`, {
+                name: eName, price: ePrice, description: eDesc, descriptionSections: eDescriptionSections,
+                category: eCat, stock: eStock, variants: eVariants, imageUrls: eImages, videoUrl: eVideo
+            });
+            showToast("success", "Updated!"); setEditP(null); fetchProducts(); fetchStats();
+        }
         catch { showToast("error", "Failed."); }
     };
     const addEditImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -480,6 +501,26 @@ export default function AdminPage() {
         </div>
     );
 
+    const DescriptionSectionEditor = ({ sections, setSections }: { sections: DescriptionSection[]; setSections: (s: DescriptionSection[]) => void }) => (
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-400">Multiple Descriptions (Sections)</label>
+                <button type="button" onClick={() => setSections([...sections, { title: "", content: "" }])} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Add Section
+                </button>
+            </div>
+            {sections.map((sec, i) => (
+                <div key={i} className="glass-card p-3 border border-white/5 space-y-2" style={{ transform: "none" }}>
+                    <div className="flex items-center gap-2">
+                        <input type="text" value={sec.title} onChange={e => { const n = [...sections]; n[i].title = e.target.value; setSections(n); }} placeholder="e.g. Features" className="input-field text-xs flex-1" />
+                        <button type="button" onClick={() => { const n = [...sections]; n.splice(i, 1); setSections(n); }} className="p-1 hover:bg-red-500/10 rounded text-red-400"><X className="w-3 h-3" /></button>
+                    </div>
+                    <textarea value={sec.content} onChange={e => { const n = [...sections]; n[i].content = e.target.value; setSections(n); }} placeholder="Content..." rows={2} className="input-field text-xs resize-none" />
+                </div>
+            ))}
+        </div>
+    );
+
     // ─── AUTH SCREEN ───
     if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>;
     if (!isAuth) return (
@@ -603,6 +644,7 @@ export default function AdminPage() {
                                 <input ref={fileRef} type="file" accept="image/*" multiple onChange={onImgChange} className="hidden" />
                             </div>
                             <div><label className="text-sm text-gray-400 mb-1 block">Video URL (Optional)</label><input type="text" value={pVideo} onChange={e => setPVideo(e.target.value)} placeholder="YouTube, Vimeo, or direct MP4 link" className="input-field" /></div>
+                            <DescriptionSectionEditor sections={pDescriptionSections} setSections={setPDescriptionSections} />
                             <VariantEditor variants={pVariants} setVariants={setPVariants} />
                             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
                                 {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Uploading...</> : <><Upload className="w-5 h-5" />Upload Product</>}
@@ -701,7 +743,6 @@ export default function AdminPage() {
                                             </div>
                                         </div>
                                     </div>
-
                                     {/* Details */}
                                     <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                                         <div className="flex items-start gap-3">
@@ -765,594 +806,605 @@ export default function AdminPage() {
                                 </div>
                             ))}
                         </div>
-                    )}
-                    {oPages > 1 && (
-                        <div className="flex items-center justify-center gap-2 mt-6">
-                            <button disabled={oPage <= 1} onClick={() => setOPage(p => p - 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                            <span className="text-sm text-gray-400">{oPage} / {oPages}</span>
-                            <button disabled={oPage >= oPages} onClick={() => setOPage(p => p + 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
-                        </div>
-                    )}
-                </div>
+                    )
+                    }
+                    {
+                        oPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-6">
+                                <button disabled={oPage <= 1} onClick={() => setOPage(p => p - 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                                <span className="text-sm text-gray-400">{oPage} / {oPages}</span>
+                                <button disabled={oPage >= oPages} onClick={() => setOPage(p => p + 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                            </div>
+                        )
+                    }
+                </div >
             )}
 
             {/* ═══ COUPONS ═══ */}
-            {tab === "coupons" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="glass-card p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Tag className="w-5 h-5 text-violet-400" /> Create Coupon</h2>
-                        <form onSubmit={createCoupon} className="space-y-4">
-                            <div><label className="text-sm text-gray-400 mb-1 block">Coupon Code</label><input type="text" value={cCode} onChange={e => setCCode(e.target.value.toUpperCase())} placeholder="SAVE20" className="input-field font-mono uppercase" /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Discount %</label><input type="number" value={cDisc} onChange={e => setCDisc(e.target.value)} placeholder="20" className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Max Discount (৳)</label><input type="number" value={cMax} onChange={e => setCMax(e.target.value)} placeholder="0 = no cap" className="input-field" /></div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Usage Limit</label><input type="number" value={cLimit} onChange={e => setCLimit(e.target.value)} placeholder="0 = unlimited" className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Expires</label><input type="date" value={cExpiry} onChange={e => setCExpiry(e.target.value)} className="input-field" /></div>
-                            </div>
-                            <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"><Plus className="w-5 h-5" />Create Coupon</button>
-                        </form>
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><Tag className="w-5 h-5 text-fuchsia-400" /> Active Coupons ({coupons.length})</h2>
-                        {coupons.length === 0 ? <div className="glass-card p-12 text-center" style={{ transform: "none" }}><Tag className="w-12 h-12 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No coupons yet.</p></div> : (
-                            <div className="space-y-3">
-                                {coupons.map(c => (
-                                    <div key={c._id} className={`glass-card p-4 flex items-center justify-between ${!c.isActive ? "opacity-50" : ""}`} style={{ transform: "none" }}>
-                                        <div>
-                                            <p className="font-mono font-bold text-white">{c.code}</p>
-                                            <p className="text-sm text-gray-400">{c.discountPercent}% off{c.maxDiscount > 0 ? ` (max ৳${c.maxDiscount})` : ""} • {c.usedCount}/{c.usageLimit || "∞"} used{c.expiresAt ? ` • Expires ${new Date(c.expiresAt).toLocaleDateString()}` : ""}</p>
+            {
+                tab === "coupons" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <div className="glass-card p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Tag className="w-5 h-5 text-violet-400" /> Create Coupon</h2>
+                            <form onSubmit={createCoupon} className="space-y-4">
+                                <div><label className="text-sm text-gray-400 mb-1 block">Coupon Code</label><input type="text" value={cCode} onChange={e => setCCode(e.target.value.toUpperCase())} placeholder="SAVE20" className="input-field font-mono uppercase" /></div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Discount %</label><input type="number" value={cDisc} onChange={e => setCDisc(e.target.value)} placeholder="20" className="input-field" /></div>
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Max Discount (৳)</label><input type="number" value={cMax} onChange={e => setCMax(e.target.value)} placeholder="0 = no cap" className="input-field" /></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Usage Limit</label><input type="number" value={cLimit} onChange={e => setCLimit(e.target.value)} placeholder="0 = unlimited" className="input-field" /></div>
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Expires</label><input type="date" value={cExpiry} onChange={e => setCExpiry(e.target.value)} className="input-field" /></div>
+                                </div>
+                                <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"><Plus className="w-5 h-5" />Create Coupon</button>
+                            </form>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><Tag className="w-5 h-5 text-fuchsia-400" /> Active Coupons ({coupons.length})</h2>
+                            {coupons.length === 0 ? <div className="glass-card p-12 text-center" style={{ transform: "none" }}><Tag className="w-12 h-12 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No coupons yet.</p></div> : (
+                                <div className="space-y-3">
+                                    {coupons.map(c => (
+                                        <div key={c._id} className={`glass-card p-4 flex items-center justify-between ${!c.isActive ? "opacity-50" : ""}`} style={{ transform: "none" }}>
+                                            <div>
+                                                <p className="font-mono font-bold text-white">{c.code}</p>
+                                                <p className="text-sm text-gray-400">{c.discountPercent}% off{c.maxDiscount > 0 ? ` (max ৳${c.maxDiscount})` : ""} • {c.usedCount}/{c.usageLimit || "∞"} used{c.expiresAt ? ` • Expires ${new Date(c.expiresAt).toLocaleDateString()}` : ""}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => toggleCoupon(c._id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${c.isActive ? "bg-emerald-500/10 text-emerald-400" : "bg-gray-500/10 text-gray-400"}`}>{c.isActive ? "Active" : "Paused"}</button>
+                                                <button onClick={() => deleteCoupon(c._id)} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button onClick={() => toggleCoupon(c._id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${c.isActive ? "bg-emerald-500/10 text-emerald-400" : "bg-gray-500/10 text-gray-400"}`}>{c.isActive ? "Active" : "Paused"}</button>
-                                            <button onClick={() => deleteCoupon(c._id)} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* ═══ REVIEWS ═══ */}
-            {tab === "reviews" && (
-                <div>
-                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400" /> Customer Reviews ({reviews.length})</h2>
-                    {reviews.length === 0 ? (
-                        <div className="glass-card p-16 text-center" style={{ transform: "none" }}>
-                            <Star className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-                            <p className="text-gray-500">No reviews found.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {reviews.map(r => (
-                                <div key={r._id} className="glass-card p-5 flex flex-col justify-between" style={{ transform: "none" }}>
-                                    <div>
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div>
-                                                <h4 className="font-semibold text-white">{r.customerName}</h4>
-                                                <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+            {
+                tab === "reviews" && (
+                    <div>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400" /> Customer Reviews ({reviews.length})</h2>
+                        {reviews.length === 0 ? (
+                            <div className="glass-card p-16 text-center" style={{ transform: "none" }}>
+                                <Star className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+                                <p className="text-gray-500">No reviews found.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {reviews.map(r => (
+                                    <div key={r._id} className="glass-card p-5 flex flex-col justify-between" style={{ transform: "none" }}>
+                                        <div>
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <h4 className="font-semibold text-white">{r.customerName}</h4>
+                                                    <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                                <div className="flex items-center gap-0.5 text-amber-400">
+                                                    {[1, 2, 3, 4, 5].map(star => (
+                                                        <Star key={star} className={`w-3.5 h-3.5 ${star <= r.rating ? 'fill-current' : 'text-gray-700'}`} />
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-0.5 text-amber-400">
-                                                {[1, 2, 3, 4, 5].map(star => (
-                                                    <Star key={star} className={`w-3.5 h-3.5 ${star <= r.rating ? 'fill-current' : 'text-gray-700'}`} />
-                                                ))}
-                                            </div>
+                                            <div className="text-xs text-violet-400 font-mono mb-2 break-all pt-2 border-t border-white/5">Product ID: {r.productId}</div>
+                                            {r.comment && <p className="text-sm text-gray-300 line-clamp-4 leading-relaxed mt-2">{r.comment}</p>}
                                         </div>
-                                        <div className="text-xs text-violet-400 font-mono mb-2 break-all pt-2 border-t border-white/5">Product ID: {r.productId}</div>
-                                        {r.comment && <p className="text-sm text-gray-300 line-clamp-4 leading-relaxed mt-2">{r.comment}</p>}
+                                        <div className="mt-4 pt-4 border-t border-white/5 flex justify-end">
+                                            <button onClick={() => deleteReview(r._id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete Review</button>
+                                        </div>
                                     </div>
-                                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-end">
-                                        <button onClick={() => deleteReview(r._id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete Review</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ═══ SETTINGS ═══ */}
-            {tab === "settings" && (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                    {/* Shipping Zones */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-violet-400" /> Shipping Zones</h2>
-                        <div className="space-y-3">
-                            {sZones.map((z, i) => (
-                                <div key={i} className="grid grid-cols-[1fr_1fr_100px_40px] gap-2 items-center">
-                                    <input type="text" value={z.id} onChange={e => { const n = [...sZones]; n[i].id = e.target.value; setSZones(n); }} placeholder="zone-id" className="input-field text-sm font-mono" />
-                                    <input type="text" value={z.label} onChange={e => { const n = [...sZones]; n[i].label = e.target.value; setSZones(n); }} placeholder="Label" className="input-field text-sm" />
-                                    <input type="number" value={z.cost} onChange={e => { const n = [...sZones]; n[i].cost = parseInt(e.target.value) || 0; setSZones(n); }} placeholder="Cost" className="input-field text-sm" />
-                                    <button onClick={() => { const n = [...sZones]; n.splice(i, 1); setSZones(n); }} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400"><X className="w-4 h-4" /></button>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                            <button onClick={() => setSZones([...sZones, { id: '', label: '', cost: 0 }])} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"><Plus className="w-3 h-3" />Add Zone</button>
-                        </div>
-                        <button onClick={() => saveSetting('shippingZones', sZones)} disabled={sLoading} className="btn-primary w-full mt-4 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Shipping</button>
-
-                        {/* Delivery Zone Toggle */}
-                        <div className="mt-6 pt-5 border-t border-gray-800">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-sm font-medium text-white">Show Delivery Zone on Checkout</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">Toggle delivery zone picker</p>
-                                </div>
-                                <button onClick={async () => { const nv = !sShowDeliveryZone; setSShowDeliveryZone(nv); await saveSetting('showDeliveryZone', nv); }} className={`relative w-12 h-6 rounded-full transition-colors ${sShowDeliveryZone ? 'bg-sky-500' : 'bg-gray-700'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sShowDeliveryZone ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Categories */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Package className="w-5 h-5 text-fuchsia-400" /> Categories</h2>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {sCategories.map((c, i) => (
-                                <div key={i} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm">
-                                    {c}
-                                    <button onClick={() => { const n = [...sCategories]; n.splice(i, 1); setSCategories(n); }} className="p-0.5 hover:text-red-400 text-gray-500"><X className="w-3 h-3" /></button>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex gap-2">
-                            <input type="text" value={sNewCat} onChange={e => setSNewCat(e.target.value)} placeholder="New category name" className="input-field text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter' && sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} />
-                            <button onClick={() => { if (sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} className="px-4 py-2 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/20 text-sm"><Plus className="w-4 h-4" /></button>
-                        </div>
-                        <button onClick={() => saveSetting('categories', sCategories)} disabled={sLoading} className="btn-primary w-full mt-4 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Categories</button>
-                    </div>
-
-                    {/* Banner / Notice */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Bell className="w-5 h-5 text-yellow-400" /> Store Banner / Notice</h2>
-                        <div className="flex items-center gap-3 mb-4">
-                            <button onClick={() => setSBanner({ ...sBanner, enabled: !sBanner.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sBanner.enabled ? 'bg-violet-500' : 'bg-gray-700'}`}>
-                                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sBanner.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                            </button>
-                            <span className="text-sm text-gray-400">{sBanner.enabled ? 'Banner Visible' : 'Banner Hidden'}</span>
-                        </div>
-                        <textarea value={sBanner.text} onChange={e => setSBanner({ ...sBanner, text: e.target.value })} placeholder="e.g. 🎉 Free delivery on orders above ৳2000! Limited time offer." rows={2} className="input-field resize-none mb-4" />
-                        {sBanner.enabled && sBanner.text && (
-                            <div className="p-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 text-sm text-gray-200 mb-4">Preview: {sBanner.text}</div>
-                        )}
-                        <button onClick={() => saveSetting('banner', sBanner)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Banner</button>
-                    </div>
-
-                    {/* Marketing & Tracking */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-400" /> Tracking IDs</h2>
-                        <div className="space-y-4 mb-6">
-                            <div>
-                                <label className="text-sm text-gray-400 mb-1 block">Google Tag Manager (GTM) ID</label>
-                                <input type="text" value={sMarketing.gtmId} onChange={e => setSMarketing({ ...sMarketing, gtmId: e.target.value })} placeholder="e.g. GTM-XXXXXXX" className="input-field" />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-400 mb-1 block">Meta Pixel (Facebook) ID</label>
-                                <input type="text" value={sMarketing.pixelId} onChange={e => setSMarketing({ ...sMarketing, pixelId: e.target.value })} placeholder="e.g. 123456789012345" className="input-field" />
-                            </div>
-                            <div>
-                                <label className="text-sm text-gray-400 mb-1 block">GA4 Measurement ID</label>
-                                <input type="text" value={sMarketing.ga4Id} onChange={e => setSMarketing({ ...sMarketing, ga4Id: e.target.value })} placeholder="e.g. G-XXXXXXXXXX" className="input-field" />
-                            </div>
-                        </div>
-                        <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
-                    </div>
-
-                    {/* Marquee Ticker */}
-                    <div className="glass-card p-6 sm:p-8 xl:col-span-2" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-emerald-400" /> Marquee / Scrolling Text</h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <button onClick={() => setSMarquee({ ...sMarquee, enabled: !sMarquee.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sMarquee.enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sMarquee.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                    </button>
-                                    <span className="text-sm text-gray-400">{sMarquee.enabled ? 'Ticker Visible' : 'Ticker Hidden'}</span>
-                                </div>
-                                <input type="text" value={sMarquee.text} onChange={e => setSMarquee({ ...sMarquee, text: e.target.value })} placeholder="e.g. 🔥 Flash Sale — 50% OFF on all items! | Free Delivery inside Dhaka" className="input-field mb-4" />
-
-                                {sMarquee.enabled && sMarquee.text && (
-                                    <div className={`p-2 rounded-xl text-sm text-white mt-4 overflow-hidden ${sMarquee.bgColor === 'gradient' ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' :
-                                        sMarquee.bgColor === 'red' ? 'bg-red-600' :
-                                            sMarquee.bgColor === 'blue' ? 'bg-blue-600' :
-                                                sMarquee.bgColor === 'green' ? 'bg-emerald-600' :
-                                                    sMarquee.bgColor === 'orange' ? 'bg-orange-500' : 'bg-gray-900'
-                                        }`}>
-                                        <span className="marquee-text" style={{ animationDuration: `${sMarquee.speed}s` }}>{sMarquee.text}</span>
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                {/* Speed */}
-                                <div className="mb-4">
-                                    <label className="text-sm text-gray-400 mb-2 block">Speed: {sMarquee.speed}s (lower = faster)</label>
-                                    <input type="range" min="5" max="30" value={sMarquee.speed} onChange={e => setSMarquee({ ...sMarquee, speed: parseInt(e.target.value) })} className="w-full accent-violet-500" />
-                                    <div className="flex justify-between text-xs text-gray-600 mt-1"><span>Fast (5s)</span><span>Slow (30s)</span></div>
-                                </div>
-
-                                {/* Background Color */}
-                                <div className="mb-4">
-                                    <label className="text-sm text-gray-400 mb-2 block">Background Color</label>
-                                    <div className="flex gap-2 flex-wrap">
-                                        {[
-                                            { id: 'gradient', label: 'Gradient', cls: 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' },
-                                            { id: 'red', label: 'Red', cls: 'bg-red-600' },
-                                            { id: 'blue', label: 'Blue', cls: 'bg-blue-600' },
-                                            { id: 'green', label: 'Green', cls: 'bg-emerald-600' },
-                                            { id: 'orange', label: 'Orange', cls: 'bg-orange-500' },
-                                            { id: 'black', label: 'Dark', cls: 'bg-gray-900' },
-                                        ].map(c => (
-                                            <button key={c.id} onClick={() => setSMarquee({ ...sMarquee, bgColor: c.id })} className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white border-2 transition-all ${c.cls} ${sMarquee.bgColor === c.id ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>{c.label}</button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="btn-primary w-full mt-2 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Feature Toggles */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-fuchsia-400" /> Feature Toggles</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-sm font-medium text-white mb-1">Track Order</h3>
-                                    <p className="text-xs text-gray-500">Public order tracking.</p>
-                                </div>
-                                <button onClick={() => setSFeatures({ ...sFeatures, trackOrder: !sFeatures.trackOrder })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.trackOrder ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.trackOrder ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                </button>
-                            </div>
-                            <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-sm font-medium text-white mb-1">Reviews</h3>
-                                    <p className="text-xs text-gray-500">Enable 5-star reviews.</p>
-                                </div>
-                                <button onClick={() => setSFeatures({ ...sFeatures, productReviews: !sFeatures.productReviews })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.productReviews ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.productReviews ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                </button>
-                            </div>
-                            <div className="glass-card p-4 border border-white/5 flex flex-col justify-between h-full md:col-span-2">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-white mb-1">Related Products</h3>
-                                        <p className="text-xs text-gray-500">Show items at bottom.</p>
-                                    </div>
-                                    <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm mb-2">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features</button>
-                    </div>
-
-                    {/* ═══ STORE BRANDING ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Store className="w-5 h-5 text-violet-400" /> Store Branding</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Name</label><input type="text" value={sBranding.storeName} onChange={e => setSBranding({ ...sBranding, storeName: e.target.value })} className="input-field" /></div>
-                            <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Tagline</label><input type="text" value={sBranding.storeTagline} onChange={e => setSBranding({ ...sBranding, storeTagline: e.target.value })} className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Logo URL</label><input type="text" value={sBranding.logoUrl} onChange={e => setSBranding({ ...sBranding, logoUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Favicon URL</label><input type="text" value={sBranding.faviconUrl} onChange={e => setSBranding({ ...sBranding, faviconUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Store Initial</label><input type="text" maxLength={2} value={sBranding.storeInitial} onChange={e => setSBranding({ ...sBranding, storeInitial: e.target.value })} className="input-field w-20" /></div>
-                            {sBranding.logoUrl && <div className="p-3 bg-white/5 rounded-xl flex items-center justify-center"><img src={sBranding.logoUrl} alt="Logo" className="h-10 object-contain" /></div>}
-                        </div>
-                        <button onClick={() => saveSetting('storeBranding', sBranding)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Branding</button>
-                    </div>
-
-                    {/* ═══ CONTACT INFO ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Phone className="w-5 h-5 text-emerald-400" /> Contact Info</h2>
-                        <div className="space-y-4 mb-6">
-                            <div><label className="text-sm text-gray-400 mb-1 block">Phone Number</label><input type="text" value={sContact.phone} onChange={e => setSContact({ ...sContact, phone: e.target.value })} className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Email</label><input type="email" value={sContact.email} onChange={e => setSContact({ ...sContact, email: e.target.value })} className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Address</label><textarea value={sContact.address} onChange={e => setSContact({ ...sContact, address: e.target.value })} rows={2} className="input-field resize-none" /></div>
-                        </div>
-                        <button onClick={() => saveSetting('contactInfo', sContact)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Contact</button>
-                    </div>
-
-                    {/* ═══ SOCIAL LINKS ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Social Links</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Facebook className="w-3.5 h-3.5" /> Facebook</label><input type="text" value={sSocial.facebook} onChange={e => setSSocial({ ...sSocial, facebook: e.target.value })} placeholder="URL" className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Instagram className="w-3.5 h-3.5" /> Instagram</label><input type="text" value={sSocial.instagram} onChange={e => setSSocial({ ...sSocial, instagram: e.target.value })} placeholder="URL" className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</label><input type="text" value={sSocial.whatsapp} onChange={e => setSSocial({ ...sSocial, whatsapp: e.target.value })} placeholder="Number" className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Youtube className="w-3.5 h-3.5" /> YouTube</label><input type="text" value={sSocial.youtube} onChange={e => setSSocial({ ...sSocial, youtube: e.target.value })} placeholder="URL" className="input-field" /></div>
-                        </div>
-                        <button onClick={() => saveSetting('socialLinks', sSocial)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Social</button>
-                    </div>
-
-                    {/* ═══ HERO SECTION ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Layout className="w-5 h-5 text-pink-400" /> Homepage Hero</h2>
-                        <div className="space-y-4 mb-6">
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setSHero({ ...sHero, showNewArrivals: !sHero.showNewArrivals })} className={`relative w-12 h-6 rounded-full transition-colors ${sHero.showNewArrivals ? 'bg-pink-500' : 'bg-gray-700'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sHero.showNewArrivals ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                </button>
-                                <label className="text-sm text-gray-400">Show New Arrivals Badge</label>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Badge Text</label><input type="text" value={sHero.badge} onChange={e => setSHero({ ...sHero, badge: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Title</label><input type="text" value={sHero.title} onChange={e => setSHero({ ...sHero, title: e.target.value })} className="input-field" /></div>
-                            </div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Title Highlight</label><input type="text" value={sHero.titleHighlight} onChange={e => setSHero({ ...sHero, titleHighlight: e.target.value })} className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={sHero.description} onChange={e => setSHero({ ...sHero, description: e.target.value })} rows={2} className="input-field resize-none" /></div>
-                        </div>
-                        <button onClick={() => saveSetting('heroContent', sHero)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Hero</button>
-                    </div>
-
-                    {/* ═══ FOOTER CONTENT ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" /> Footer Content</h2>
-                        <div className="space-y-4 mb-6">
-                            <div><label className="text-sm text-gray-400 mb-1 block">Copyright Text ({'{year}'})</label><input type="text" value={sFooter.copyrightText} onChange={e => setSFooter({ ...sFooter, copyrightText: e.target.value })} className="input-field" /></div>
-                            <div>
-                                <label className="text-sm text-gray-400 mb-1 block">Payment Methods (csv)</label>
-                                <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="input-field" placeholder="Cash on Delivery" />
-                            </div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Footer Description</label><textarea value={sFooter.description} onChange={e => setSFooter({ ...sFooter, description: e.target.value })} rows={3} className="input-field resize-none" /></div>
-                        </div>
-                        <button onClick={() => saveSetting('footerContent', sFooter)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Footer</button>
-                    </div>
-
-                    {/* ═══ SEO SETTINGS ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-400" /> SEO Tracking & Config</h2>
-                        <div className="space-y-4 mb-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Site Title</label><input type="text" value={sSeo.siteTitle} onChange={e => setSSeo({ ...sSeo, siteTitle: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Site URL</label><input type="text" value={sSeo.siteUrl} onChange={e => setSSeo({ ...sSeo, siteUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                            </div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Keywords</label><input type="text" value={sSeo.keywords} onChange={e => setSSeo({ ...sSeo, keywords: e.target.value })} className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">OG Image URL</label><input type="text" value={sSeo.ogImage} onChange={e => setSSeo({ ...sSeo, ogImage: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Meta Description</label><textarea value={sSeo.metaDescription} onChange={e => setSSeo({ ...sSeo, metaDescription: e.target.value })} rows={3} className="input-field resize-none" /></div>
-                        </div>
-                        <button onClick={() => saveSetting('seo', sSeo)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save SEO</button>
-                    </div>
-
-                    {/* ═══ APPEARANCE ═══ */}
-                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Palette className="w-5 h-5 text-orange-400" /> Appearance</h2>
-                        <div className="mb-6">
-                            <label className="text-sm text-gray-400 mb-3 block">Products Per Row (Desktop)</label>
-                            <div className="grid grid-cols-3 gap-2 border border-white/5 bg-white/5 rounded-xl p-1">
-                                {[3, 4, 5].map(n => (
-                                    <button key={n} onClick={() => setSAppearance({ ...sAppearance, productsPerRow: n })} className={`p-2 rounded-lg text-sm font-medium transition-all ${sAppearance.productsPerRow === n ? 'bg-violet-500/80 text-white shadow-lg shadow-violet-500/20' : 'text-gray-400 hover:text-white'}`}>{n} cols</button>
                                 ))}
                             </div>
-                        </div>
-                        <button onClick={() => saveSetting('appearance', sAppearance)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Appearance</button>
+                        )}
                     </div>
+                )
+            }
 
-                </div>
-            )}
+            {/* ═══ SETTINGS ═══ */}
+            {
+                tab === "settings" && (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                        {/* Shipping Zones */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-violet-400" /> Shipping Zones</h2>
+                            <div className="space-y-3">
+                                {sZones.map((z, i) => (
+                                    <div key={i} className="grid grid-cols-[1fr_1fr_100px_40px] gap-2 items-center">
+                                        <input type="text" value={z.id} onChange={e => { const n = [...sZones]; n[i].id = e.target.value; setSZones(n); }} placeholder="zone-id" className="input-field text-sm font-mono" />
+                                        <input type="text" value={z.label} onChange={e => { const n = [...sZones]; n[i].label = e.target.value; setSZones(n); }} placeholder="Label" className="input-field text-sm" />
+                                        <input type="number" value={z.cost} onChange={e => { const n = [...sZones]; n[i].cost = parseInt(e.target.value) || 0; setSZones(n); }} placeholder="Cost" className="input-field text-sm" />
+                                        <button onClick={() => { const n = [...sZones]; n.splice(i, 1); setSZones(n); }} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400"><X className="w-4 h-4" /></button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex gap-2 mt-4">
+                                <button onClick={() => setSZones([...sZones, { id: '', label: '', cost: 0 }])} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"><Plus className="w-3 h-3" />Add Zone</button>
+                            </div>
+                            <button onClick={() => saveSetting('shippingZones', sZones)} disabled={sLoading} className="btn-primary w-full mt-4 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Shipping</button>
 
-            {/* ═══ OMS (Order Management — Pathao) ═══ */}
-            {tab === "oms" && (() => {
-                // Fetch OMS orders on tab open
-                const fetchOmsOrders = async () => {
-                    setOmsLoading(true);
-                    try { const res = await fetch('/api/orders'); if (res.ok) { const data = await res.json(); setOmsOrders(data.orders || data); } } catch (err) { console.error(err); }
-                    finally { setOmsLoading(false); }
-                };
-                if (omsOrders.length === 0 && !omsLoading) fetchOmsOrders();
-
-                const openOmsModal = (order: any) => {
-                    const totalQty = order.products?.reduce((s: number, p: any) => s + (p.quantity || 1), 0) || 1;
-                    const desc = order.products?.map((p: any) => `${p.name} x${p.quantity}`).join(', ') || `Order #${order.orderNumber}`;
-                    const amount = order.paymentMethod === 'cod' ? order.totalAmount : 0;
-                    setOmsModalData({ itemWeight: 0.5, deliveryType: 48, specialInstruction: `Order #${order.orderNumber} | Payment: ${(order.paymentMethod || 'cod').toUpperCase()}`, itemDescription: desc, amountToCollect: amount, itemQuantity: totalQty });
-                    setOmsModalOrder(order);
-                };
-
-                const handleOmsSubmit = async () => {
-                    if (!omsModalOrder) return;
-                    setOmsProcessingId(omsModalOrder._id);
-                    setOmsModalOrder(null);
-                    try {
-                        const result = await sendOrderToPathao(omsModalOrder._id, omsModalData);
-                        if (result?.success) {
-                            showToast('success', `✅ Sent! CN: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
-                            setOmsOrders(prev => prev.map(o => o._id === omsModalOrder._id ? { ...o, status: 'confirmed', consignmentId: result.consignmentId, pathaoStatus: 'Pickup_Pending' } : o));
-                        } else { showToast('error', `❌ ${result?.error}`); }
-                    } catch (err: any) { showToast('error', `❌ ${err.message}`); }
-                    finally { setOmsProcessingId(null); }
-                };
-
-                const omsStatusStyles: Record<string, string> = {
-                    pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-                    confirmed: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
-                    shipped: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-                    delivered: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-                };
-
-                return (
-                    <div className="space-y-6">
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold flex items-center gap-2"><Truck className="w-5 h-5 text-violet-400" /> Pathao Courier — OMS</h2>
-                            <button onClick={() => { setOmsOrders([]); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-400">
-                                <RefreshCw className="w-4 h-4" /> Refresh
-                            </button>
-                        </div>
-
-                        {/* Table */}
-                        <div className="glass-card border border-white/5 overflow-hidden" style={{ transform: 'none' }}>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
-                                    <thead className="border-b border-white/10">
-                                        <tr>
-                                            <th className="px-6 py-4 text-gray-400 font-medium">Order</th>
-                                            <th className="px-6 py-4 text-gray-400 font-medium">Customer</th>
-                                            <th className="px-6 py-4 text-gray-400 font-medium">Payment</th>
-                                            <th className="px-6 py-4 text-gray-400 font-medium">Status</th>
-                                            <th className="px-6 py-4 text-gray-400 font-medium">Amount</th>
-                                            <th className="px-6 py-4 text-gray-400 font-medium text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {omsLoading ? (
-                                            <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /><p>Loading orders...</p></td></tr>
-                                        ) : omsOrders.length === 0 ? (
-                                            <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
-                                        ) : (
-                                            omsOrders.map((order: any) => (
-                                                <React.Fragment key={order._id}>
-                                                    <tr className={`transition-colors ${omsExpandedId === order._id ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'}`}>
-                                                        <td className="px-6 py-4">
-                                                            <span className="font-semibold text-white">#{order.orderNumber}</span>
-                                                            <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="font-medium text-white">{order.customerName}</div>
-                                                            <div className="text-xs text-gray-500">{order.customerPhone}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
-                                                            {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
-                                                            {order.consignmentId && (
-                                                                <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
-                                                                    {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
-                                                                </button>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            {!order.consignmentId ? (
-                                                                <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
-                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
-                                                                    {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
-                                                                </button>
-                                                            ) : (
-                                                                <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
-                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
-                                                                    Track Order
-                                                                </a>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                    {omsExpandedId === order._id && order.consignmentId ? (() => {
-                                                        const activeIdx = getTimelineIndex(order.pathaoStatus);
-                                                        return (
-                                                            <tr className="bg-black/20 border-b border-white/5">
-                                                                <td colSpan={6} className="p-0">
-                                                                    <div className="p-6">
-                                                                        <div className="flex items-center gap-2 mb-6">
-                                                                            <Truck className="w-5 h-5 text-violet-400" />
-                                                                            <h3 className="text-lg font-bold text-white">Delivery Timeline — #{order.orderNumber}</h3>
-                                                                            <span className="ml-auto text-xs text-gray-500 font-mono">CN: {order.consignmentId}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center justify-between relative">
-                                                                            <div className="absolute top-6 left-8 right-8 h-0.5 bg-white/10 z-0" />
-                                                                            <div className="absolute top-6 left-8 h-0.5 bg-violet-500 z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
-                                                                            {TIMELINE_STEPS.map((step, idx) => {
-                                                                                const Icon = step.icon;
-                                                                                const isCompleted = idx <= activeIdx;
-                                                                                const isCurrent = idx === activeIdx;
-                                                                                return (
-                                                                                    <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
-                                                                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
-                                                                                            ${isCurrent ? 'border-violet-500 bg-violet-500/20 text-violet-400 shadow-lg shadow-violet-500/20' :
-                                                                                                isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
-                                                                                                    'border-white/10 bg-white/5 text-gray-600'}`}>
-                                                                                            <Icon className="w-5 h-5" />
-                                                                                        </div>
-                                                                                        <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-600'}`}>{step.label}</span>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })() : null}
-                                                </React.Fragment>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                            {/* Delivery Zone Toggle */}
+                            <div className="mt-6 pt-5 border-t border-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-white">Show Delivery Zone on Checkout</h3>
+                                        <p className="text-xs text-gray-500 mt-0.5">Toggle delivery zone picker</p>
+                                    </div>
+                                    <button onClick={async () => { const nv = !sShowDeliveryZone; setSShowDeliveryZone(nv); await saveSetting('showDeliveryZone', nv); }} className={`relative w-12 h-6 rounded-full transition-colors ${sShowDeliveryZone ? 'bg-sky-500' : 'bg-gray-700'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sShowDeliveryZone ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* OMS Send Modal */}
-                        {omsModalOrder && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                                <div className="bg-[#110C1D] border border-violet-500/20 rounded-2xl shadow-2xl shadow-violet-500/10 w-full max-w-lg mx-4 overflow-hidden">
-                                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white">Send to Pathao</h3>
-                                            <p className="text-xs text-gray-500">Order #{omsModalOrder.orderNumber} — {omsModalOrder.customerName}</p>
-                                        </div>
-                                        <button onClick={() => setOmsModalOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                        {/* Categories */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Package className="w-5 h-5 text-fuchsia-400" /> Categories</h2>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {sCategories.map((c, i) => (
+                                    <div key={i} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm">
+                                        {c}
+                                        <button onClick={() => { const n = [...sCategories]; n.splice(i, 1); setSCategories(n); }} className="p-0.5 hover:text-red-400 text-gray-500"><X className="w-3 h-3" /></button>
                                     </div>
-                                    <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Delivery Type</label>
-                                            <select value={omsModalData.deliveryType} onChange={e => setOmsModalData({ ...omsModalData, deliveryType: Number(e.target.value) })} className="input-field">
-                                                <option value={48} className="bg-[#1a1225]">Normal Delivery</option>
-                                                <option value={12} className="bg-[#1a1225]">On-Demand Delivery</option>
-                                            </select>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <input type="text" value={sNewCat} onChange={e => setSNewCat(e.target.value)} placeholder="New category name" className="input-field text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter' && sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} />
+                                <button onClick={() => { if (sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} className="px-4 py-2 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/20 text-sm"><Plus className="w-4 h-4" /></button>
+                            </div>
+                            <button onClick={() => saveSetting('categories', sCategories)} disabled={sLoading} className="btn-primary w-full mt-4 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Categories</button>
+                        </div>
+
+                        {/* Banner / Notice */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Bell className="w-5 h-5 text-yellow-400" /> Store Banner / Notice</h2>
+                            <div className="flex items-center gap-3 mb-4">
+                                <button onClick={() => setSBanner({ ...sBanner, enabled: !sBanner.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sBanner.enabled ? 'bg-violet-500' : 'bg-gray-700'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sBanner.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                </button>
+                                <span className="text-sm text-gray-400">{sBanner.enabled ? 'Banner Visible' : 'Banner Hidden'}</span>
+                            </div>
+                            <textarea value={sBanner.text} onChange={e => setSBanner({ ...sBanner, text: e.target.value })} placeholder="e.g. 🎉 Free delivery on orders above ৳2000! Limited time offer." rows={2} className="input-field resize-none mb-4" />
+                            {sBanner.enabled && sBanner.text && (
+                                <div className="p-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 text-sm text-gray-200 mb-4">Preview: {sBanner.text}</div>
+                            )}
+                            <button onClick={() => saveSetting('banner', sBanner)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Banner</button>
+                        </div>
+
+                        {/* Marketing & Tracking */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-400" /> Tracking IDs</h2>
+                            <div className="space-y-4 mb-6">
+                                <div>
+                                    <label className="text-sm text-gray-400 mb-1 block">Google Tag Manager (GTM) ID</label>
+                                    <input type="text" value={sMarketing.gtmId} onChange={e => setSMarketing({ ...sMarketing, gtmId: e.target.value })} placeholder="e.g. GTM-XXXXXXX" className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="text-sm text-gray-400 mb-1 block">Meta Pixel (Facebook) ID</label>
+                                    <input type="text" value={sMarketing.pixelId} onChange={e => setSMarketing({ ...sMarketing, pixelId: e.target.value })} placeholder="e.g. 123456789012345" className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="text-sm text-gray-400 mb-1 block">GA4 Measurement ID</label>
+                                    <input type="text" value={sMarketing.ga4Id} onChange={e => setSMarketing({ ...sMarketing, ga4Id: e.target.value })} placeholder="e.g. G-XXXXXXXXXX" className="input-field" />
+                                </div>
+                            </div>
+                            <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
+                        </div>
+
+                        {/* Marquee Ticker */}
+                        <div className="glass-card p-6 sm:p-8 xl:col-span-2" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-emerald-400" /> Marquee / Scrolling Text</h2>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <button onClick={() => setSMarquee({ ...sMarquee, enabled: !sMarquee.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sMarquee.enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}>
+                                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sMarquee.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                        </button>
+                                        <span className="text-sm text-gray-400">{sMarquee.enabled ? 'Ticker Visible' : 'Ticker Hidden'}</span>
+                                    </div>
+                                    <input type="text" value={sMarquee.text} onChange={e => setSMarquee({ ...sMarquee, text: e.target.value })} placeholder="e.g. 🔥 Flash Sale — 50% OFF on all items! | Free Delivery inside Dhaka" className="input-field mb-4" />
+
+                                    {sMarquee.enabled && sMarquee.text && (
+                                        <div className={`p-2 rounded-xl text-sm text-white mt-4 overflow-hidden ${sMarquee.bgColor === 'gradient' ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' :
+                                            sMarquee.bgColor === 'red' ? 'bg-red-600' :
+                                                sMarquee.bgColor === 'blue' ? 'bg-blue-600' :
+                                                    sMarquee.bgColor === 'green' ? 'bg-emerald-600' :
+                                                        sMarquee.bgColor === 'orange' ? 'bg-orange-500' : 'bg-gray-900'
+                                            }`}>
+                                            <span className="marquee-text" style={{ animationDuration: `${sMarquee.speed}s` }}>{sMarquee.text}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Total Weight (kg)</label>
-                                                <select value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="input-field">
-                                                    <option value={0.2} className="bg-[#1a1225]">0-0.2</option>
-                                                    <option value={0.5} className="bg-[#1a1225]">0.2-0.5</option>
-                                                    <option value={1} className="bg-[#1a1225]">0.5-1</option>
-                                                    <option value={1.5} className="bg-[#1a1225]">1-1.5</option>
-                                                    <option value={2} className="bg-[#1a1225]">1.5-2</option>
-                                                    <option value={3} className="bg-[#1a1225]">2-3</option>
-                                                    <option value={4} className="bg-[#1a1225]">3-4</option>
-                                                    <option value={5} className="bg-[#1a1225]">4-5</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Quantity</label>
-                                                <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => {
-                                                    const newQty = parseInt(e.target.value) || 1;
-                                                    const baseAmount = omsModalOrder.paymentMethod === 'cod' ? (omsModalOrder.totalAmount / (omsModalData.itemQuantity || 1)) : 0;
-                                                    setOmsModalData({ ...omsModalData, itemQuantity: newQty, amountToCollect: baseAmount * newQty });
-                                                }} className="input-field" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Amount to Collect (৳)</label>
-                                            <input type="number" min="0" value={omsModalData.amountToCollect} onChange={e => setOmsModalData({ ...omsModalData, amountToCollect: parseFloat(e.target.value) || 0 })} className="input-field" />
-                                            <p className="text-xs text-gray-600 mt-1">{(omsModalOrder.paymentMethod || 'cod') === 'cod' ? 'COD — customer pays on delivery' : 'Prepaid — already paid'}</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Item Description & Price</label>
-                                            <input type="text" value={omsModalData.itemDescription} onChange={e => setOmsModalData({ ...omsModalData, itemDescription: e.target.value })} className="input-field" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-400 mb-1.5">Special Instructions</label>
-                                            <textarea rows={3} value={omsModalData.specialInstruction} onChange={e => setOmsModalData({ ...omsModalData, specialInstruction: e.target.value })} className="input-field resize-none" placeholder="e.g. Handle with care, fragile..." />
+                                    )}
+                                </div>
+                                <div>
+                                    {/* Speed */}
+                                    <div className="mb-4">
+                                        <label className="text-sm text-gray-400 mb-2 block">Speed: {sMarquee.speed}s (lower = faster)</label>
+                                        <input type="range" min="5" max="30" value={sMarquee.speed} onChange={e => setSMarquee({ ...sMarquee, speed: parseInt(e.target.value) })} className="w-full accent-violet-500" />
+                                        <div className="flex justify-between text-xs text-gray-600 mt-1"><span>Fast (5s)</span><span>Slow (30s)</span></div>
+                                    </div>
+
+                                    {/* Background Color */}
+                                    <div className="mb-4">
+                                        <label className="text-sm text-gray-400 mb-2 block">Background Color</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {[
+                                                { id: 'gradient', label: 'Gradient', cls: 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' },
+                                                { id: 'red', label: 'Red', cls: 'bg-red-600' },
+                                                { id: 'blue', label: 'Blue', cls: 'bg-blue-600' },
+                                                { id: 'green', label: 'Green', cls: 'bg-emerald-600' },
+                                                { id: 'orange', label: 'Orange', cls: 'bg-orange-500' },
+                                                { id: 'black', label: 'Dark', cls: 'bg-gray-900' },
+                                            ].map(c => (
+                                                <button key={c.id} onClick={() => setSMarquee({ ...sMarquee, bgColor: c.id })} className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white border-2 transition-all ${c.cls} ${sMarquee.bgColor === c.id ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>{c.label}</button>
+                                            ))}
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
-                                        <button onClick={() => setOmsModalOrder(null)} className="px-4 py-2.5 text-sm font-medium text-gray-400 border border-white/10 rounded-lg hover:bg-white/5">Cancel</button>
-                                        <button onClick={handleOmsSubmit} className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-semibold rounded-lg border border-violet-500/30 transition-all">
-                                            <Send className="w-4 h-4" /> Send to Pathao
+                                    <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="btn-primary w-full mt-2 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Feature Toggles */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-fuchsia-400" /> Feature Toggles</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-white mb-1">Track Order</h3>
+                                        <p className="text-xs text-gray-500">Public order tracking.</p>
+                                    </div>
+                                    <button onClick={() => setSFeatures({ ...sFeatures, trackOrder: !sFeatures.trackOrder })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.trackOrder ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.trackOrder ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
+                                </div>
+                                <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-white mb-1">Reviews</h3>
+                                        <p className="text-xs text-gray-500">Enable 5-star reviews.</p>
+                                    </div>
+                                    <button onClick={() => setSFeatures({ ...sFeatures, productReviews: !sFeatures.productReviews })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.productReviews ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.productReviews ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
+                                </div>
+                                <div className="glass-card p-4 border border-white/5 flex flex-col justify-between h-full md:col-span-2">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <h3 className="text-sm font-medium text-white mb-1">Related Products</h3>
+                                            <p className="text-xs text-gray-500">Show items at bottom.</p>
+                                        </div>
+                                        <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        )}
+                            <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm mb-2">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features</button>
+                        </div>
+
+                        {/* ═══ STORE BRANDING ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Store className="w-5 h-5 text-violet-400" /> Store Branding</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Name</label><input type="text" value={sBranding.storeName} onChange={e => setSBranding({ ...sBranding, storeName: e.target.value })} className="input-field" /></div>
+                                <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Tagline</label><input type="text" value={sBranding.storeTagline} onChange={e => setSBranding({ ...sBranding, storeTagline: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Logo URL</label><input type="text" value={sBranding.logoUrl} onChange={e => setSBranding({ ...sBranding, logoUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Favicon URL</label><input type="text" value={sBranding.faviconUrl} onChange={e => setSBranding({ ...sBranding, faviconUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Store Initial</label><input type="text" maxLength={2} value={sBranding.storeInitial} onChange={e => setSBranding({ ...sBranding, storeInitial: e.target.value })} className="input-field w-20" /></div>
+                                {sBranding.logoUrl && <div className="p-3 bg-white/5 rounded-xl flex items-center justify-center"><img src={sBranding.logoUrl} alt="Logo" className="h-10 object-contain" /></div>}
+                            </div>
+                            <button onClick={() => saveSetting('storeBranding', sBranding)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Branding</button>
+                        </div>
+
+                        {/* ═══ CONTACT INFO ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Phone className="w-5 h-5 text-emerald-400" /> Contact Info</h2>
+                            <div className="space-y-4 mb-6">
+                                <div><label className="text-sm text-gray-400 mb-1 block">Phone Number</label><input type="text" value={sContact.phone} onChange={e => setSContact({ ...sContact, phone: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Email</label><input type="email" value={sContact.email} onChange={e => setSContact({ ...sContact, email: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Address</label><textarea value={sContact.address} onChange={e => setSContact({ ...sContact, address: e.target.value })} rows={2} className="input-field resize-none" /></div>
+                            </div>
+                            <button onClick={() => saveSetting('contactInfo', sContact)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Contact</button>
+                        </div>
+
+                        {/* ═══ SOCIAL LINKS ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Social Links</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Facebook className="w-3.5 h-3.5" /> Facebook</label><input type="text" value={sSocial.facebook} onChange={e => setSSocial({ ...sSocial, facebook: e.target.value })} placeholder="URL" className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Instagram className="w-3.5 h-3.5" /> Instagram</label><input type="text" value={sSocial.instagram} onChange={e => setSSocial({ ...sSocial, instagram: e.target.value })} placeholder="URL" className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</label><input type="text" value={sSocial.whatsapp} onChange={e => setSSocial({ ...sSocial, whatsapp: e.target.value })} placeholder="Number" className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Youtube className="w-3.5 h-3.5" /> YouTube</label><input type="text" value={sSocial.youtube} onChange={e => setSSocial({ ...sSocial, youtube: e.target.value })} placeholder="URL" className="input-field" /></div>
+                            </div>
+                            <button onClick={() => saveSetting('socialLinks', sSocial)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Social</button>
+                        </div>
+
+                        {/* ═══ HERO SECTION ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Layout className="w-5 h-5 text-pink-400" /> Homepage Hero</h2>
+                            <div className="space-y-4 mb-6">
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => setSHero({ ...sHero, showNewArrivals: !sHero.showNewArrivals })} className={`relative w-12 h-6 rounded-full transition-colors ${sHero.showNewArrivals ? 'bg-pink-500' : 'bg-gray-700'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sHero.showNewArrivals ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
+                                    <label className="text-sm text-gray-400">Show New Arrivals Badge</label>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Badge Text</label><input type="text" value={sHero.badge} onChange={e => setSHero({ ...sHero, badge: e.target.value })} className="input-field" /></div>
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Title</label><input type="text" value={sHero.title} onChange={e => setSHero({ ...sHero, title: e.target.value })} className="input-field" /></div>
+                                </div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Title Highlight</label><input type="text" value={sHero.titleHighlight} onChange={e => setSHero({ ...sHero, titleHighlight: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={sHero.description} onChange={e => setSHero({ ...sHero, description: e.target.value })} rows={2} className="input-field resize-none" /></div>
+                            </div>
+                            <button onClick={() => saveSetting('heroContent', sHero)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Hero</button>
+                        </div>
+
+                        {/* ═══ FOOTER CONTENT ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" /> Footer Content</h2>
+                            <div className="space-y-4 mb-6">
+                                <div><label className="text-sm text-gray-400 mb-1 block">Copyright Text ({'{year}'})</label><input type="text" value={sFooter.copyrightText} onChange={e => setSFooter({ ...sFooter, copyrightText: e.target.value })} className="input-field" /></div>
+                                <div>
+                                    <label className="text-sm text-gray-400 mb-1 block">Payment Methods (csv)</label>
+                                    <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="input-field" placeholder="Cash on Delivery" />
+                                </div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Footer Description</label><textarea value={sFooter.description} onChange={e => setSFooter({ ...sFooter, description: e.target.value })} rows={3} className="input-field resize-none" /></div>
+                            </div>
+                            <button onClick={() => saveSetting('footerContent', sFooter)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Footer</button>
+                        </div>
+
+                        {/* ═══ SEO SETTINGS ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-400" /> SEO Tracking & Config</h2>
+                            <div className="space-y-4 mb-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Site Title</label><input type="text" value={sSeo.siteTitle} onChange={e => setSSeo({ ...sSeo, siteTitle: e.target.value })} className="input-field" /></div>
+                                    <div><label className="text-sm text-gray-400 mb-1 block">Site URL</label><input type="text" value={sSeo.siteUrl} onChange={e => setSSeo({ ...sSeo, siteUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                                </div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Keywords</label><input type="text" value={sSeo.keywords} onChange={e => setSSeo({ ...sSeo, keywords: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">OG Image URL</label><input type="text" value={sSeo.ogImage} onChange={e => setSSeo({ ...sSeo, ogImage: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Meta Description</label><textarea value={sSeo.metaDescription} onChange={e => setSSeo({ ...sSeo, metaDescription: e.target.value })} rows={3} className="input-field resize-none" /></div>
+                            </div>
+                            <button onClick={() => saveSetting('seo', sSeo)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save SEO</button>
+                        </div>
+
+                        {/* ═══ APPEARANCE ═══ */}
+                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Palette className="w-5 h-5 text-orange-400" /> Appearance</h2>
+                            <div className="mb-6">
+                                <label className="text-sm text-gray-400 mb-3 block">Products Per Row (Desktop)</label>
+                                <div className="grid grid-cols-3 gap-2 border border-white/5 bg-white/5 rounded-xl p-1">
+                                    {[3, 4, 5].map(n => (
+                                        <button key={n} onClick={() => setSAppearance({ ...sAppearance, productsPerRow: n })} className={`p-2 rounded-lg text-sm font-medium transition-all ${sAppearance.productsPerRow === n ? 'bg-violet-500/80 text-white shadow-lg shadow-violet-500/20' : 'text-gray-400 hover:text-white'}`}>{n} cols</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button onClick={() => saveSetting('appearance', sAppearance)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Appearance</button>
+                        </div>
+
                     </div>
-                );
-            })()}
+                )
+            }
+
+            {/* ═══ OMS (Order Management — Pathao) ═══ */}
+            {
+                tab === "oms" && (() => {
+                    // Fetch OMS orders on tab open
+                    const fetchOmsOrders = async () => {
+                        setOmsLoading(true);
+                        try { const res = await fetch('/api/orders'); if (res.ok) { const data = await res.json(); setOmsOrders(data.orders || data); } } catch (err) { console.error(err); }
+                        finally { setOmsLoading(false); }
+                    };
+                    if (omsOrders.length === 0 && !omsLoading) fetchOmsOrders();
+
+                    const openOmsModal = (order: any) => {
+                        const totalQty = order.products?.reduce((s: number, p: any) => s + (p.quantity || 1), 0) || 1;
+                        const desc = order.products?.map((p: any) => `${p.name} x${p.quantity}`).join(', ') || `Order #${order.orderNumber}`;
+                        const amount = order.paymentMethod === 'cod' ? order.totalAmount : 0;
+                        setOmsModalData({ itemWeight: 0.5, deliveryType: 48, specialInstruction: `Order #${order.orderNumber} | Payment: ${(order.paymentMethod || 'cod').toUpperCase()}`, itemDescription: desc, amountToCollect: amount, itemQuantity: totalQty });
+                        setOmsModalOrder(order);
+                    };
+
+                    const handleOmsSubmit = async () => {
+                        if (!omsModalOrder) return;
+                        setOmsProcessingId(omsModalOrder._id);
+                        setOmsModalOrder(null);
+                        try {
+                            const result = await sendOrderToPathao(omsModalOrder._id, omsModalData);
+                            if (result?.success) {
+                                showToast('success', `✅ Sent! CN: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
+                                setOmsOrders(prev => prev.map(o => o._id === omsModalOrder._id ? { ...o, status: 'confirmed', consignmentId: result.consignmentId, pathaoStatus: 'Pickup_Pending' } : o));
+                            } else { showToast('error', `❌ ${result?.error}`); }
+                        } catch (err: any) { showToast('error', `❌ ${err.message}`); }
+                        finally { setOmsProcessingId(null); }
+                    };
+
+                    const omsStatusStyles: Record<string, string> = {
+                        pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+                        confirmed: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+                        shipped: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+                        delivered: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+                    };
+
+                    return (
+                        <div className="space-y-6">
+                            {/* Header */}
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl font-semibold flex items-center gap-2"><Truck className="w-5 h-5 text-violet-400" /> Pathao Courier — OMS</h2>
+                                <button onClick={() => { setOmsOrders([]); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-400">
+                                    <RefreshCw className="w-4 h-4" /> Refresh
+                                </button>
+                            </div>
+
+                            {/* Table */}
+                            <div className="glass-card border border-white/5 overflow-hidden" style={{ transform: 'none' }}>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
+                                        <thead className="border-b border-white/10">
+                                            <tr>
+                                                <th className="px-6 py-4 text-gray-400 font-medium">Order</th>
+                                                <th className="px-6 py-4 text-gray-400 font-medium">Customer</th>
+                                                <th className="px-6 py-4 text-gray-400 font-medium">Payment</th>
+                                                <th className="px-6 py-4 text-gray-400 font-medium">Status</th>
+                                                <th className="px-6 py-4 text-gray-400 font-medium">Amount</th>
+                                                <th className="px-6 py-4 text-gray-400 font-medium text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {omsLoading ? (
+                                                <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /><p>Loading orders...</p></td></tr>
+                                            ) : omsOrders.length === 0 ? (
+                                                <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
+                                            ) : (
+                                                omsOrders.map((order: any) => (
+                                                    <React.Fragment key={order._id}>
+                                                        <tr className={`transition-colors ${omsExpandedId === order._id ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'}`}>
+                                                            <td className="px-6 py-4">
+                                                                <span className="font-semibold text-white">#{order.orderNumber}</span>
+                                                                <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <div className="font-medium text-white">{order.customerName}</div>
+                                                                <div className="text-xs text-gray-500">{order.customerPhone}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
+                                                                {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
+                                                                {order.consignmentId && (
+                                                                    <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
+                                                                        {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                {!order.consignmentId ? (
+                                                                    <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
+                                                                        {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
+                                                                    </button>
+                                                                ) : (
+                                                                    <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
+                                                                        Track Order
+                                                                    </a>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        {omsExpandedId === order._id && order.consignmentId ? (() => {
+                                                            const activeIdx = getTimelineIndex(order.pathaoStatus);
+                                                            return (
+                                                                <tr className="bg-black/20 border-b border-white/5">
+                                                                    <td colSpan={6} className="p-0">
+                                                                        <div className="p-6">
+                                                                            <div className="flex items-center gap-2 mb-6">
+                                                                                <Truck className="w-5 h-5 text-violet-400" />
+                                                                                <h3 className="text-lg font-bold text-white">Delivery Timeline — #{order.orderNumber}</h3>
+                                                                                <span className="ml-auto text-xs text-gray-500 font-mono">CN: {order.consignmentId}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center justify-between relative">
+                                                                                <div className="absolute top-6 left-8 right-8 h-0.5 bg-white/10 z-0" />
+                                                                                <div className="absolute top-6 left-8 h-0.5 bg-violet-500 z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
+                                                                                {TIMELINE_STEPS.map((step, idx) => {
+                                                                                    const Icon = step.icon;
+                                                                                    const isCompleted = idx <= activeIdx;
+                                                                                    const isCurrent = idx === activeIdx;
+                                                                                    return (
+                                                                                        <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
+                                                                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
+                                                                                            ${isCurrent ? 'border-violet-500 bg-violet-500/20 text-violet-400 shadow-lg shadow-violet-500/20' :
+                                                                                                    isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
+                                                                                                        'border-white/10 bg-white/5 text-gray-600'}`}>
+                                                                                                <Icon className="w-5 h-5" />
+                                                                                            </div>
+                                                                                            <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-600'}`}>{step.label}</span>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })() : null}
+                                                    </React.Fragment>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* OMS Send Modal */}
+                            {omsModalOrder && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                                    <div className="bg-[#110C1D] border border-violet-500/20 rounded-2xl shadow-2xl shadow-violet-500/10 w-full max-w-lg mx-4 overflow-hidden">
+                                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-white">Send to Pathao</h3>
+                                                <p className="text-xs text-gray-500">Order #{omsModalOrder.orderNumber} — {omsModalOrder.customerName}</p>
+                                            </div>
+                                            <button onClick={() => setOmsModalOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+                                        </div>
+                                        <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Delivery Type</label>
+                                                <select value={omsModalData.deliveryType} onChange={e => setOmsModalData({ ...omsModalData, deliveryType: Number(e.target.value) })} className="input-field">
+                                                    <option value={48} className="bg-[#1a1225]">Normal Delivery</option>
+                                                    <option value={12} className="bg-[#1a1225]">On-Demand Delivery</option>
+                                                </select>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Total Weight (kg)</label>
+                                                    <select value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="input-field">
+                                                        <option value={0.2} className="bg-[#1a1225]">0-0.2</option>
+                                                        <option value={0.5} className="bg-[#1a1225]">0.2-0.5</option>
+                                                        <option value={1} className="bg-[#1a1225]">0.5-1</option>
+                                                        <option value={1.5} className="bg-[#1a1225]">1-1.5</option>
+                                                        <option value={2} className="bg-[#1a1225]">1.5-2</option>
+                                                        <option value={3} className="bg-[#1a1225]">2-3</option>
+                                                        <option value={4} className="bg-[#1a1225]">3-4</option>
+                                                        <option value={5} className="bg-[#1a1225]">4-5</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Quantity</label>
+                                                    <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => {
+                                                        const newQty = parseInt(e.target.value) || 1;
+                                                        const baseAmount = omsModalOrder.paymentMethod === 'cod' ? (omsModalOrder.totalAmount / (omsModalData.itemQuantity || 1)) : 0;
+                                                        setOmsModalData({ ...omsModalData, itemQuantity: newQty, amountToCollect: baseAmount * newQty });
+                                                    }} className="input-field" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Amount to Collect (৳)</label>
+                                                <input type="number" min="0" value={omsModalData.amountToCollect} onChange={e => setOmsModalData({ ...omsModalData, amountToCollect: parseFloat(e.target.value) || 0 })} className="input-field" />
+                                                <p className="text-xs text-gray-600 mt-1">{(omsModalOrder.paymentMethod || 'cod') === 'cod' ? 'COD — customer pays on delivery' : 'Prepaid — already paid'}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Item Description & Price</label>
+                                                <input type="text" value={omsModalData.itemDescription} onChange={e => setOmsModalData({ ...omsModalData, itemDescription: e.target.value })} className="input-field" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Special Instructions</label>
+                                                <textarea rows={3} value={omsModalData.specialInstruction} onChange={e => setOmsModalData({ ...omsModalData, specialInstruction: e.target.value })} className="input-field resize-none" placeholder="e.g. Handle with care, fragile..." />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
+                                            <button onClick={() => setOmsModalOrder(null)} className="px-4 py-2.5 text-sm font-medium text-gray-400 border border-white/10 rounded-lg hover:bg-white/5">Cancel</button>
+                                            <button onClick={handleOmsSubmit} className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-semibold rounded-lg border border-violet-500/30 transition-all">
+                                                <Send className="w-4 h-4" /> Send to Pathao
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()
+            }
 
             {/* ═══ EDIT MODAL ═══ */}
             {
@@ -1380,6 +1432,7 @@ export default function AdminPage() {
                                     <input ref={editFileRef} type="file" accept="image/*" multiple onChange={addEditImages} className="hidden" />
                                 </div>
                                 <div><label className="text-sm text-gray-400 mb-1 block">Video URL</label><input type="text" value={eVideo} onChange={e => setEVideo(e.target.value)} className="input-field" /></div>
+                                <DescriptionSectionEditor sections={eDescriptionSections} setSections={setEDescriptionSections} />
                                 <VariantEditor variants={eVariants} setVariants={setEVariants} />
                                 <button onClick={saveEdit} className="btn-primary w-full flex items-center justify-center gap-2"><CheckCircle className="w-5 h-5" /> Save Changes</button>
                             </div>

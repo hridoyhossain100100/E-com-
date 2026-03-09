@@ -19,23 +19,48 @@ const RelatedProducts = dynamic(() => import("../../components/RelatedProducts")
     ssr: false
 });
 
-export interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; videoUrl?: string; category: string; stock: number; variants: any[]; }
+export interface Product { _id: string; name: string; price: number; description: string; descriptionSections?: { title: string; content: string; }[]; imageUrls: string[]; videoUrl?: string; category: string; stock: number; variants: any[]; }
 
-// Helper: Parse description into structured sections (bullet points, features, specs)
-function parseDescription(desc: string) {
-    const lines = desc.split('\n').map(l => l.trim()).filter(Boolean);
-    const bullets: string[] = [];
-    const paragraphs: string[] = [];
+// Helper: Parse description into structured sections (headers, bullet points, paragraphs)
+interface DescriptionSection {
+    title?: string;
+    bullets: string[];
+    paragraphs: string[];
+}
+
+function parseDescription(desc: string): DescriptionSection[] {
+    const lines = desc.split('\n').map(l => l.trim());
+    const sections: DescriptionSection[] = [];
+    let currentSection: DescriptionSection = { bullets: [], paragraphs: [] };
 
     for (const line of lines) {
+        if (!line) continue;
+
+        // Detect potential headers (ends with ':' or matches markdown style headers)
+        if (line.endsWith(':') || line.startsWith('###') || line.startsWith('**')) {
+            if (currentSection.bullets.length > 0 || currentSection.paragraphs.length > 0) {
+                sections.push(currentSection);
+            }
+            currentSection = {
+                title: line.replace(/^[#*\s]+|[#*\s:]+$/g, ''),
+                bullets: [],
+                paragraphs: []
+            };
+            continue;
+        }
+
         if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*') || line.startsWith('✓') || line.startsWith('✅')) {
-            bullets.push(line.replace(/^[•\-*✓✅]\s*/, ''));
+            currentSection.bullets.push(line.replace(/^[•\-*✓✅]\s*/, ''));
         } else {
-            paragraphs.push(line);
+            currentSection.paragraphs.push(line);
         }
     }
 
-    return { bullets, paragraphs };
+    if (currentSection.bullets.length > 0 || currentSection.paragraphs.length > 0) {
+        sections.push(currentSection);
+    }
+
+    return sections;
 }
 
 export default function ProductDetailsClient({
@@ -77,8 +102,8 @@ export default function ProductDetailsClient({
     const [quantity, setQuantity] = useState(1);
     const [showStickyBtn, setShowStickyBtn] = useState(true);
 
-    const descriptionData = useMemo(() => {
-        if (!product?.description) return { bullets: [], paragraphs: [] };
+    const descriptionSections = useMemo(() => {
+        if (!product?.description) return [];
         return parseDescription(product.description);
     }, [product?.description]);
 
@@ -377,61 +402,60 @@ export default function ProductDetailsClient({
                                     Product Details
                                 </h3>
 
-                                {(() => {
-                                    const { bullets, paragraphs } = descriptionData;
-                                    return (
-                                        <div className="space-y-4">
-                                            {/* Paragraph text */}
-                                            {paragraphs.length > 0 && (
-                                                <div className="text-[var(--text-muted)] leading-relaxed text-sm sm:text-base space-y-2">
-                                                    {paragraphs.map((p, i) => (
-                                                        <p key={i}>{p}</p>
-                                                    ))}
-                                                </div>
+                                {product.descriptionSections && product.descriptionSections.length > 0 ? (
+                                    product.descriptionSections.map((section, idx) => (
+                                        <div key={idx} className={idx > 0 ? "mt-6 pt-6 border-t border-[var(--card-border)]/50" : ""}>
+                                            {section.title && (
+                                                <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
+                                                    {idx === 0 ? <Zap className="w-4 h-4 text-amber-400" /> : <ChevronRight className="w-4 h-4 text-violet-400" />}
+                                                    {section.title}
+                                                </h4>
                                             )}
-
-                                            {/* Bullet points / Key Features */}
-                                            {bullets.length > 0 && (
-                                                <div className="mt-4">
+                                            <div className="text-[var(--text-muted)] leading-relaxed text-sm sm:text-base whitespace-pre-wrap">
+                                                {section.content}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <>
+                                        {descriptionSections.map((section, idx) => (
+                                            <div key={idx} className={idx > 0 ? "mt-6 pt-6 border-t border-[var(--card-border)]/50" : ""}>
+                                                {section.title && (
                                                     <h4 className="text-sm font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                                                        <Zap className="w-4 h-4 text-amber-400" />
-                                                        Key Features
+                                                        {idx === 0 ? <Zap className="w-4 h-4 text-amber-400" /> : <ChevronRight className="w-4 h-4 text-violet-400" />}
+                                                        {section.title}
                                                     </h4>
-                                                    <ul className="space-y-2">
-                                                        {bullets.map((b, i) => (
+                                                )}
+
+                                                {section.paragraphs.length > 0 && (
+                                                    <div className="text-[var(--text-muted)] leading-relaxed text-sm sm:text-base space-y-2">
+                                                        {section.paragraphs.map((p, i) => (
+                                                            <p key={i}>{p}</p>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {section.bullets.length > 0 && (
+                                                    <ul className="space-y-2 mt-3">
+                                                        {section.bullets.map((b, i) => (
                                                             <li key={i} className="flex items-start gap-3 text-sm text-[var(--text-muted)]">
                                                                 <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
                                                                 <span>{b}</span>
                                                             </li>
                                                         ))}
                                                     </ul>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
+                                        ))}
 
-                                            {/* If no bullets found, show the whole description nicely */}
-                                            {bullets.length === 0 && paragraphs.length === 0 && (
-                                                <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base text-[var(--text-muted)]">{product.description}</p>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
+                                        {descriptionSections.length === 0 && product.description && (
+                                            <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base text-[var(--text-muted)]">{product.description}</p>
+                                        )}
+                                    </>
+                                )}
                             </div>
 
-                            {/* Trust Badges */}
-                            <div className="grid grid-cols-3 gap-3 mb-6">
-                                <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)]">
-                                    <Truck className="w-5 h-5 text-sky-400" />
-                                    <span className="text-[10px] sm:text-xs text-[var(--text-muted)] text-center font-medium">Fast Delivery</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)]">
-                                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                                    <span className="text-[10px] sm:text-xs text-[var(--text-muted)] text-center font-medium">Secure Payment</span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)]">
-                                    <Package className="w-5 h-5 text-violet-400" />
-                                    <span className="text-[10px] sm:text-xs text-[var(--text-muted)] text-center font-medium">Cash on Delivery</span>
-                                </div>
-                            </div>
+                            {/* Trust Badges Removed */}
 
                             {/* Variants */}
                             {product.variants?.length > 0 && (
@@ -746,14 +770,10 @@ export default function ProductDetailsClient({
                 {features.relatedProducts !== false && <RelatedProducts currentId={product._id} category={product.category} />}
             </div>
 
-            {/* Mobile Sticky Buy Now Bar with Price */}
+            {/* Mobile Sticky Buy Now Bar Refined: Button only on right */}
             {(product.stock || 0) > 0 && showStickyBtn && (
-                <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-lg border-t border-gray-800 z-50 md:hidden animate-in slide-in-from-bottom-5">
-                    <div className="flex items-center gap-3 px-4 py-3">
-                        <div className="flex-1 min-w-0">
-                            <p className="text-white font-bold text-lg leading-tight">৳{product.price.toLocaleString()}</p>
-                            <p className="text-gray-400 text-xs truncate">{product.name}</p>
-                        </div>
+                <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden animate-in slide-in-from-bottom-5 pointer-events-none">
+                    <div className="flex items-center justify-end gap-3 px-4 py-3 pointer-events-auto">
                         <button
                             onClick={() => {
                                 trackAddToCart({ id: product._id, name: product.name, price: product.price, category: product.category });
