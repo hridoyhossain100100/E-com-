@@ -673,11 +673,6 @@ export default function AdminPage() {
                     {/* ═══ OVERVIEW ═══ */}
                     {tab === "overview" && (
                         <div className="space-y-6 max-w-7xl mx-auto">
-                            {/* Alert Banner */}
-                            <div className="bg-[#fff3cd] border-l-4 border-[#ffc107] text-[#856404] p-4 rounded-r-lg text-sm font-medium">
-                                We regret to inform you that our server is currently experiencing technical difficulties.
-                            </div>
-
                             {/* Stat Cards */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm">
