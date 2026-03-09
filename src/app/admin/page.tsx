@@ -410,6 +410,10 @@ export default function AdminPage() {
                 <div class="info-box"><div class="label">Method</div><div class="value">${payMethod}</div></div>
                 ${o.paymentMethod !== 'cod' ? `
                 <div class="info-box"><div class="label">Payment Status</div><div class="value capitalize">${o.status}</div></div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
                 ` : '<div class="info-box"><div class="label">Collection</div><div class="value">Collect on Delivery</div></div>'}
             </div>
 
@@ -700,6 +704,7 @@ export default function AdminPage() {
                                             </div>
                                         </div>
                                     </div>
+<<<<<<< HEAD
 
                                     {/* Details */}
                                     <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
@@ -735,6 +740,12 @@ export default function AdminPage() {
                                                 )}
                                             </div>
                                         </div>
+=======
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                                        <div><span className="text-gray-500">Customer</span><p className="text-white font-medium">{o.customerName}</p><p className="text-gray-400">{o.customerPhone}</p></div>
+                                        <div><span className="text-gray-500">Address</span><p className="text-white">{o.customerAddress}</p></div>
+                                        <div><span className="text-gray-500">Payment</span><p className="text-white capitalize">{o.paymentMethod || 'Cash on Delivery'}</p></div>
+>>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
                                     </div>
 
                                     {/* Products & Footer */}

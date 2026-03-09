@@ -39,7 +39,6 @@ function CheckoutForm() {
     const [shippingCost, setShippingCost] = useState(0);
     const [shippingZones, setShippingZones] = useState([{ id: "dhaka", label: "ঢাকার ভেতরে", cost: 60 }, { id: "outside", label: "ঢাকার বাইরে", cost: 120 }]);
     const [selectedCity, setSelectedCity] = useState("");
-    const [orderType, setOrderType] = useState<"cod" | "pay">("cod");
     const [showDeliveryZone, setShowDeliveryZone] = useState(true);
 
     const bdCities = [
@@ -278,7 +277,11 @@ function CheckoutForm() {
                         </div>
                     </section>
 
+<<<<<<< HEAD
                     {/* Payment Methods Removed */}
+=======
+
+>>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
                 </div>
 
                 {/* RIGHT COLUMN: Sticky Order Summary & Quick Add */}

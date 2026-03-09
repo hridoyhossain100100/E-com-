@@ -43,6 +43,7 @@ export async function POST(req: Request) {
         if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 2) {
             return NextResponse.json({ message: 'Valid customer name is required (min 2 chars)' }, { status: 400 });
         }
+<<<<<<< HEAD
         if (!customerPhone || typeof customerPhone !== 'string' || !/^01[3-9]\d{8}$/.test(customerPhone.trim())) {
             return NextResponse.json({ message: 'Valid Bangladesh phone number is required (01XXXXXXXXX)' }, { status: 400 });
         }
@@ -55,6 +56,8 @@ export async function POST(req: Request) {
                 return NextResponse.json({ message: 'Invalid product quantity' }, { status: 400 });
             }
         }
+=======
+>>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
 
         // Fetch product details from DB and calculate total to prevent tampering
         let calculatedTotal = 0;
@@ -92,6 +95,7 @@ export async function POST(req: Request) {
         let savedOrder;
         let orderNumber;
 
+<<<<<<< HEAD
         if (draftOrderId) {
             const existingOrder = await Order.findById(draftOrderId);
             if (existingOrder && existingOrder.status === 'incomplete') {
@@ -106,6 +110,22 @@ export async function POST(req: Request) {
                 existingOrder.shippingZone = shippingZone;
                 existingOrder.shippingCost = shippingCost;
                 existingOrder.status = 'pending';
+=======
+        const newOrder = new Order({
+            products: orderProducts,
+            orderNumber,
+            totalAmount: finalTotal,
+            customerName,
+            customerPhone,
+            customerAddress,
+            couponCode,
+            discountAmount,
+            paymentMethod,
+            shippingZone,
+            shippingCost,
+            status: 'pending'
+        });
+>>>>>>> 53c1441 (Remove bKash payment method and related references (Root and Client update))
 
                 savedOrder = await existingOrder.save();
 
