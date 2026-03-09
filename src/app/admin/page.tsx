@@ -18,7 +18,7 @@ import React from 'react';
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
 interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; category: string; stock: number; variants: Variant[]; createdAt?: string; }
 interface OrderProduct { productId: string; name: string; price: number; quantity: number; }
-interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; bkashNumber: string; transactionId: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; consignmentId?: string; pathaoStatus?: string; }
+interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; bkashNumber: string; transactionId: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; shippingZone?: string; shippingCost?: number; consignmentId?: string; pathaoStatus?: string; }
 interface Stats { totalOrders: number; totalRevenue: number; totalProducts: number; }
 interface DailyData { date: string; label: string; revenue: number; count: number; }
 interface Coupon { _id: string; code: string; discountPercent: number; maxDiscount: number; usageLimit: number; usedCount: number; expiresAt: string | null; isActive: boolean; }
@@ -332,42 +332,87 @@ export default function AdminPage() {
 
     // ─── Invoice Print ───
     const printInvoice = (o: Order) => {
-        const w = window.open('', '_blank', 'width=800,height=600');
+        const w = window.open('', '_blank', 'width=900,height=700');
         if (!w) return;
+        const subtotal = o.products.reduce((s, p) => s + p.price * p.quantity, 0);
+        const payMethodLabel: Record<string, string> = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', cod: 'Cash on Delivery' };
+        const payMethod = payMethodLabel[o.paymentMethod || 'cod'] || o.paymentMethod?.toUpperCase() || 'N/A';
         w.document.write(`<!DOCTYPE html><html><head><title>Invoice #${o.orderNumber}</title><style>
-            body{font-family:Arial,sans-serif;padding:40px;color:#333;max-width:700px;margin:0 auto}
-            h1{color:#6d28d9;margin-bottom:4px}h2{margin-top:30px;border-bottom:2px solid #6d28d9;padding-bottom:6px}
-            table{width:100%;border-collapse:collapse;margin-top:10px}th,td{padding:10px;text-align:left;border-bottom:1px solid #eee}
-            th{background:#f9f5ff;color:#6d28d9;font-weight:600}.total{font-size:20px;font-weight:bold;color:#6d28d9}
-            .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:10px}
-            .info-box{background:#f9f5ff;padding:15px;border-radius:8px}.label{color:#888;font-size:12px;margin-bottom:4px}
-            .footer{margin-top:40px;text-align:center;color:#aaa;font-size:12px;border-top:1px solid #eee;padding-top:15px}
+            *{margin:0;padding:0;box-sizing:border-box}
+            body{font-family:'Segoe UI',Arial,sans-serif;padding:40px 50px;color:#1a1a2e;max-width:800px;margin:0 auto;background:#fff}
+            .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:24px;border-bottom:3px solid #6d28d9}
+            .brand{font-size:28px;font-weight:800;color:#6d28d9;letter-spacing:-0.5px}
+            .brand-sub{font-size:11px;color:#888;margin-top:2px}
+            .inv-meta{text-align:right;font-size:13px;color:#555}
+            .inv-meta strong{display:block;font-size:22px;color:#1a1a2e;margin-bottom:4px}
+            .inv-meta .status{display:inline-block;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;margin-top:6px}
+            .section-title{font-size:13px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:1px;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #ede9fe}
+            .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+            .info-box{background:#f9f5ff;padding:14px 16px;border-radius:10px;border:1px solid #ede9fe}
+            .info-box.full{grid-column:1/3}
+            .label{color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+            .value{font-size:14px;font-weight:600;color:#1a1a2e}
+            table{width:100%;border-collapse:collapse;margin-top:8px}
+            th{background:#f9f5ff;color:#6d28d9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:10px 14px;text-align:left;border-bottom:2px solid #ede9fe}
+            td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f1f1f1;color:#333}
+            tr:last-child td{border-bottom:none}
+            .summary{margin-top:16px;text-align:right;font-size:13px;color:#555}
+            .summary .row{display:flex;justify-content:flex-end;gap:40px;padding:5px 0}
+            .summary .row.total{font-size:20px;font-weight:800;color:#6d28d9;border-top:2px solid #6d28d9;margin-top:8px;padding-top:12px}
+            .footer{margin-top:40px;text-align:center;color:#aaa;font-size:11px;border-top:1px dashed #ddd;padding-top:16px}
+            .cn-badge{display:inline-block;background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;margin-top:6px;font-family:monospace}
+            @media print{body{padding:20px 30px}.no-print{display:none}}
         </style></head><body>
-            <h1>Invoice #${o.orderNumber}</h1>
-            <p style="color:#888">${new Date(o.createdAt).toLocaleString()}</p>
-            <h2>Customer</h2>
-            <div class="info-grid">
-                <div class="info-box"><div class="label">Name</div><strong>${o.customerName}</strong></div>
-                <div class="info-box"><div class="label">Phone</div><strong>${o.customerPhone}</strong></div>
-                <div class="info-box" style="grid-column:1/3"><div class="label">Address</div><strong>${o.customerAddress}</strong></div>
+            <div class="header">
+                <div><div class="brand">ShopVibe</div><div class="brand-sub">Premium E-Commerce</div></div>
+                <div class="inv-meta">
+                    <strong>Invoice #${o.orderNumber}</strong>
+                    <div>${new Date(o.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                    <div class="status" style="background:${o.status === 'delivered' ? '#d1fae5;color:#065f46' : o.status === 'shipped' ? '#ede9fe;color:#5b21b6' : o.status === 'confirmed' ? '#dbeafe;color:#1e40af' : '#fef3c7;color:#92400e'}">${o.status}</div>
+                    ${o.consignmentId ? `<div class="cn-badge">CN: ${o.consignmentId}</div>` : ''}
+                </div>
             </div>
-            <h2>Payment</h2>
+
+            <div class="section-title">Customer Information</div>
             <div class="info-grid">
-                <div class="info-box"><div class="label">Method</div><strong>Bkash</strong></div>
-                <div class="info-box"><div class="label">Bkash Number</div><strong>${o.bkashNumber}</strong></div>
-                <div class="info-box" style="grid-column:1/3"><div class="label">Transaction ID</div><strong>${o.transactionId}</strong></div>
+                <div class="info-box"><div class="label">Name</div><div class="value">${o.customerName}</div></div>
+                <div class="info-box"><div class="label">Phone</div><div class="value">${o.customerPhone}</div></div>
+                <div class="info-box full"><div class="label">Shipping Address</div><div class="value">${o.customerAddress}</div></div>
             </div>
-            <h2>Products</h2>
-            <table><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead><tbody>
-            ${o.products.map(p => `<tr><td>${p.name}</td><td>${p.quantity}</td><td>৳${p.price.toLocaleString()}</td><td>৳${(p.price * p.quantity).toLocaleString()}</td></tr>`).join('')}
-            </tbody></table>
-            ${o.couponCode ? `<p style="margin-top:10px;color:#6d28d9">🎫 Coupon: ${o.couponCode} (-৳${(o.discountAmount || 0).toLocaleString()})</p>` : ''}
-            <p style="text-align:right;margin-top:15px" class="total">Total: ৳${o.totalAmount.toLocaleString()}</p>
-            <p style="text-align:right"><span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${o.status === 'delivered' ? '#d1fae5' : o.status === 'shipped' ? '#ede9fe' : o.status === 'confirmed' ? '#dbeafe' : '#fef3c7'};color:${o.status === 'delivered' ? '#065f46' : o.status === 'shipped' ? '#5b21b6' : o.status === 'confirmed' ? '#1e40af' : '#92400e'}">${o.status.toUpperCase()}</span></p>
-            <div class="footer">ShopVibe — Thank you for your purchase! 💜</div>
+
+            <div class="section-title">Payment Details</div>
+            <div class="info-grid">
+                <div class="info-box"><div class="label">Method</div><div class="value">${payMethod}</div></div>
+                ${o.paymentMethod !== 'cod' ? `
+                <div class="info-box"><div class="label">${payMethod} Number</div><div class="value">${o.bkashNumber || '—'}</div></div>
+                <div class="info-box full"><div class="label">Transaction ID</div><div class="value" style="font-family:monospace">${o.transactionId || '—'}</div></div>
+                ` : '<div class="info-box"><div class="label">Collection</div><div class="value">Collect on Delivery</div></div>'}
+            </div>
+
+            <div class="section-title">Order Items</div>
+            <table>
+                <thead><tr><th>Product</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Subtotal</th></tr></thead>
+                <tbody>
+                ${o.products.map(p => `<tr><td>${p.name}</td><td style="text-align:center">${p.quantity}</td><td style="text-align:right">৳${p.price.toLocaleString()}</td><td style="text-align:right">৳${(p.price * p.quantity).toLocaleString()}</td></tr>`).join('')}
+                </tbody>
+            </table>
+
+            <div class="summary">
+                <div class="row"><span>Subtotal</span><span>৳${subtotal.toLocaleString()}</span></div>
+                ${o.couponCode ? `<div class="row" style="color:#6d28d9"><span>🎫 Coupon (${o.couponCode})</span><span>-৳${(o.discountAmount || 0).toLocaleString()}</span></div>` : ''}
+                <div class="row"><span>Shipping (${o.shippingZone === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</span><span>৳${(o.shippingCost || 0).toLocaleString()}</span></div>
+                <div class="row total"><span>Total</span><span>৳${o.totalAmount.toLocaleString()}</span></div>
+            </div>
+
+            <div class="footer">
+                <p>Thank you for shopping with <strong style="color:#6d28d9">ShopVibe</strong>! 💜</p>
+                <p style="margin-top:4px">For any queries, please contact us.</p>
+            </div>
+            <div class="no-print" style="text-align:center;margin-top:24px">
+                <button onclick="window.print()" style="padding:10px 32px;background:#6d28d9;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">🖨️ Print / Save as PDF</button>
+            </div>
         </body></html>`);
         w.document.close();
-        w.print();
     };
 
     // ─── Variants helpers ───
