@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { VWOScript } from 'vwo-smartcode-nextjs';
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import MarketingScripts, { GTMNoScript } from "./components/MarketingScripts";
@@ -90,6 +91,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <VWOScript accountId="1203603" />
         {/* @seo-fundamentals: Preconnect to external origins for faster loading */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
