@@ -1,0 +1,27 @@
+
+> client@0.1.0 build
+> next build
+
+⚠ turbopack.root should be absolute, using: C:\Users\Hridoy Hossain\OneDrive\Desktop\e-com site
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ✓ optimizeCss
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.5s
+  Running TypeScript ...
+Failed to compile.
+
+./client/src/app/admin/page.tsx:706:43
+Type error: '</' expected.
+
+[0m [90m 704 |[39m                                             [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 705 |[39m                                         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+[31m[1m>[22m[39m[90m 706 |[39m                                     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m                                           [31m[1m^[22m[39m
+ [90m 707 |[39m [33m<<[39m[33m<<[39m[33m<<[39m[33m<[39m [33mHEAD[39m
+ [90m 708 |[39m
+ [90m 709 |[39m                                     {[90m/* Details */[39m}[0m
+Next.js build worker exited with code: 1 and signal: null

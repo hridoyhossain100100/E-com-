@@ -76,6 +76,7 @@ export async function POST(req: Request) {
         const category = formData.get('category') as string;
         const stock = formData.get('stock') as string;
         const variants = formData.get('variants') as string;
+        const descriptionSections = formData.get('descriptionSections') as string;
         const videoUrl = formData.get('videoUrl') as string;
 
         // @security-audit [xss-html-injection]: Input validation & sanitization
@@ -148,6 +149,7 @@ export async function POST(req: Request) {
             name,
             price: parseFloat(price),
             description,
+            descriptionSections: descriptionSections ? JSON.parse(descriptionSections) : [],
             imageUrls,
             videoUrl: videoUrl || "",
             category: category || 'General',

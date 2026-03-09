@@ -49,12 +49,13 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const { name, price, description, category, stock, variants, imageUrls, videoUrl } = body;
+        const { name, price, description, descriptionSections, category, stock, variants, imageUrls, videoUrl } = body;
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
         if (price !== undefined) updateData.price = parseFloat(price);
         if (description !== undefined) updateData.description = description;
+        if (descriptionSections !== undefined) updateData.descriptionSections = descriptionSections;
         if (category !== undefined) updateData.category = category;
         if (stock !== undefined) updateData.stock = parseInt(stock);
         if (variants !== undefined) updateData.variants = typeof variants === 'string' ? JSON.parse(variants) : variants;

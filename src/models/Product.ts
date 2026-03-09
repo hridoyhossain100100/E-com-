@@ -21,6 +21,10 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    descriptionSections: [{
+        title: String,
+        content: String
+    }],
     imageUrls: {
         type: [String],
         required: true
