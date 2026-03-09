@@ -1,8 +1,13 @@
 @echo off
-echo Starting the Backend Server on Port 5000...
-start cmd /k "cd server && npm run dev"
-
-echo Starting the Frontend Client on Port 3000...
+echo ============================================
+echo   ShopVibe E-Commerce - Starting...
+echo ============================================
+echo.
+echo Starting Next.js (Frontend + API) on Port 3000...
 start cmd /k "cd client && npm run dev"
-
-echo Both Client and Server are starting in separate windows!
+echo.
+echo Next.js is starting! Open http://localhost:3000
+echo.
+echo NOTE: The Express backend server is no longer needed.
+echo       All API routes are handled by Next.js API routes.
+echo ============================================
