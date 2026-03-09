@@ -190,7 +190,11 @@ body {
 }
 
 .scroll-top-btn {
-  animation: bounce-up 2s ease-in-out infinite;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.scroll-top-btn:hover {
+  transform: translateY(-2px);
 }
 
 /* Marquee ticker */
@@ -362,4 +366,174 @@ html.light select {
 html.light select option {
   background: white !important;
   color: #1e293b !important;
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .float-shape,
+  .float-shape-reverse,
+  .scroll-top-btn,
+  .marquee-text,
+  .hero-gradient,
+  .animate-fade-in-up,
+  .skeleton,
+  .animate-shimmer,
+  .animate-pulse-glow {
+    animation: none !important;
+  }
+}
+
+/* ─── Smooth Scroll ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── Overscroll Behavior ─── */
+body {
+  overscroll-behavior: contain;
+}
+
+/* ─── Hide Scrollbar for thumbnail rows ─── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Mobile product page optimizations ─── */
+@media (max-width: 639px) {
+  /* Product hero card: edge-to-edge on mobile for immersive feel */
+  .glass-card[style*="transform: none"] {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* Keep border-radius for checkout and other cards */
+  #embedded-checkout {
+    border-radius: 1rem;
+  }
+
+  /* Ensure bottom padding for sticky bar + bottom nav */
+  .min-h-screen.pb-20 {
+    padding-bottom: 8rem;
+  }
+}
+
+/* ─── iOS Safe Area Support ─── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ─── Mobile Touch Target Minimum ─── */
+@media (max-width: 767px) {
+  /* Ensure all interactive elements meet 44px minimum */
+  button,
+  [role="button"],
+  a[href] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exception for inline text links */
+  p a[href],
+  li a[href],
+  span a[href] {
+    min-height: auto;
+    min-width: auto;
+  }
+
+  /* Exception for badge/chip elements */
+  .text-\[10px\],
+  .text-\[9px\] {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* ─── Mobile Typography Optimization ─── */
+@media (max-width: 639px) {
+  /* Prevent text from being too small on mobile */
+  body {
+    font-size: 16px; /* Prevents iOS zoom on input focus */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Ensure inputs don't trigger zoom (iOS zooms on <16px inputs) */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ─── Mobile Tap Highlight ─── */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device: remove default tap highlight, add custom */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Active state for touch feedback */
+  button:active,
+  [role="button"]:active,
+  a:active {
+    opacity: 0.85;
+    transition: opacity 0.1s ease;
+  }
+
+  /* Prevent text selection on interactive elements */
+  button,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* ─── Bottom Navigation Spacing ─── */
+@media (max-width: 767px) {
+  /* Add bottom padding for bottom nav on all pages */
+  .scroll-top-btn {
+    bottom: 5rem !important; /* Above bottom nav */
+  }
+
+  /* Product sticky buy bar should be above bottom nav */
+  .fixed.bottom-0.md\:hidden {
+    bottom: 4rem;
+  }
+}
+
+/* ─── OLED Dark Mode Battery Optimization ─── */
+.dark {
+  /* Use true black for maximum OLED battery savings */
+  --background: #000000;
+}
+
+/* ─── Improved Light Mode Contrast ─── */
+html:not(.dark) .text-gray-400 {
+  color: #6b7280 !important; /* Improved contrast ratio */
+}
+
+html:not(.dark) .text-gray-500 {
+  color: #4b5563 !important; /* Improved contrast ratio */
+}
+
+html:not(.dark) .text-gray-600 {
+  color: #374151 !important;
 }

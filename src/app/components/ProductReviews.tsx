@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Star, MessageSquareQuote, Loader2, User } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
 export default function ProductReviews({ productId }: { productId: string }) {
     const [reviews, setReviews] = useState<any[]>([]);
     const [avg, setAvg] = useState(0);
@@ -20,7 +18,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
 
     const fetchReviews = async () => {
         try {
-            const res = await axios.get(`${API}/api/reviews/${productId}`);
+            const res = await axios.get(`/api/reviews/${productId}`);
             setReviews(res.data.reviews);
             setAvg(res.data.averageRating);
             setTotal(res.data.totalReviews);
@@ -37,7 +35,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
         setSubmitting(true);
         setMsg("");
         try {
-            await axios.post(`${API}/api/reviews/${productId}`, {
+            await axios.post(`/api/reviews/${productId}`, {
                 customerName: name, rating, comment
             });
             setMsg("Review submitted successfully! Thank you 🙌");

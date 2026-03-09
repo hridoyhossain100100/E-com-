@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag, Loader2 } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Product { _id: string; name: string; price: number; imageUrls: string[]; category: string; }
 
@@ -19,7 +18,7 @@ export default function RelatedProducts({ currentId, category }: { currentId: st
 
         const fetchRelated = async () => {
             try {
-                const res = await axios.get(`${API}/api/products`);
+                const res = await axios.get(`/api/products`);
                 let related = res.data.filter((p: Product) => p.category === category && p._id !== currentId);
 
                 // If not enough in category, fetch some random ones
@@ -44,7 +43,7 @@ export default function RelatedProducts({ currentId, category }: { currentId: st
             <h2 className="text-2xl sm:text-3xl font-bold mb-8 gradient-text">You May Also Like</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                 {products.map((p) => (
-                    <Link key={p._id} href={`/product/${p._id}`} className="group glass-card p-3 sm:p-4 hover:border-violet-500/50 transition-all flex flex-col h-full">
+                    <Link key={p._id} href={`/product/${p._id}`} className="group glass-card p-3 sm:p-4 hover:border-violet-500/50 transition-all flex flex-col h-full cursor-pointer">
                         <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-3 sm:mb-4 bg-gray-900/50">
                             {p.imageUrls?.length > 0 ? (
                                 <Image src={p.imageUrls[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" sizes="(max-width: 768px) 50vw, 25vw" />

@@ -8,6 +8,11 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { code } = body;
 
+        // @security-audit [injection]: Validate coupon code input to prevent NoSQL injection
+        if (!code || typeof code !== 'string' || code.length > 50 || !/^[A-Za-z0-9_-]+$/.test(code.trim())) {
+            return NextResponse.json({ message: 'Invalid coupon code format' }, { status: 400 });
+        }
+
         const coupon = await Coupon.findOne({ code: code.toUpperCase().trim(), isActive: true });
 
         if (!coupon) {
@@ -29,8 +34,10 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
+        console.error('Coupon validation error:', error);
+        // @security-audit [sensitive-data-exposure]: Don't leak internal error details
         return NextResponse.json(
-            { message: 'Internal Server Error', error: error?.message },
+            { message: 'Internal Server Error' },
             { status: 500 }
         );
     }

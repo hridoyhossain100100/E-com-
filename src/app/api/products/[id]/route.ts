@@ -49,7 +49,7 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const { name, price, description, category, stock, variants, imageUrls } = body;
+        const { name, price, description, category, stock, variants, imageUrls, videoUrl } = body;
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
@@ -59,6 +59,7 @@ export async function PUT(
         if (stock !== undefined) updateData.stock = parseInt(stock);
         if (variants !== undefined) updateData.variants = typeof variants === 'string' ? JSON.parse(variants) : variants;
         if (imageUrls !== undefined) updateData.imageUrls = imageUrls;
+        if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
 
         const product = await Product.findByIdAndUpdate(id, updateData, { new: true });
 
@@ -68,8 +69,10 @@ export async function PUT(
 
         return NextResponse.json(product);
     } catch (error: any) {
+        console.error('Failed to update product:', error);
+        // @security-audit [sensitive-data-exposure]: Don't leak internal error details
         return NextResponse.json(
-            { message: 'Failed to update product', error: error?.message },
+            { message: 'Failed to update product' },
             { status: 500 }
         );
     }

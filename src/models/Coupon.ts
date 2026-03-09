@@ -40,6 +40,11 @@ const couponSchema = new mongoose.Schema({
     }
 });
 
+// @database-optimizer: Indexes for coupon validation queries
+couponSchema.index({ code: 1, isActive: 1 }); // Fast coupon lookup during checkout
+couponSchema.index({ expiresAt: 1 }); // Expired coupon cleanup queries
+couponSchema.index({ isActive: 1, createdAt: -1 }); // Admin listing active coupons
+
 const Coupon = mongoose.models.Coupon || mongoose.model('Coupon', couponSchema);
 
 export default Coupon;

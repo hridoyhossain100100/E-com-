@@ -2,15 +2,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Sun, Moon, Heart, ShoppingCart, PackageSearch } from "lucide-react";
+import { Sun, Moon, Heart, ShoppingCart, PackageSearch, Menu, X } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-export default function Navbar() {
+export default function Navbar({ initialSettings }: { initialSettings?: any }) {
     const [dark, setDark] = useState(true);
     const [wishCount, setWishCount] = useState(0);
     const [cartCount, setCartCount] = useState(0);
-    const [marquee, setMarquee] = useState<{ text: string; enabled: boolean; speed?: number; bgColor?: string } | null>(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [marquee, setMarquee] = useState<{ text: string; enabled: boolean; speed?: number; bgColor?: string } | null>(initialSettings?.marquee || null);
+    const [branding, setBranding] = useState<{ storeName: string; storeInitial: string; logoUrl: string } | null>(initialSettings?.storeBranding || null);
 
     useEffect(() => {
         const saved = localStorage.getItem("theme");
@@ -22,8 +22,6 @@ export default function Navbar() {
         // Cart count
         const ct = JSON.parse(localStorage.getItem("cart") || "[]");
         setCartCount(ct.length);
-        // Fetch marquee setting
-        axios.get(`/api/settings`).then(r => { if (r.data.marquee) setMarquee(r.data.marquee); }).catch(() => { });
 
         const handler = () => { const w = JSON.parse(localStorage.getItem("wishlist") || "[]"); setWishCount(w.length); };
         const cartHandler = () => { const c = JSON.parse(localStorage.getItem("cart") || "[]"); setCartCount(c.length); };
@@ -44,27 +42,55 @@ export default function Navbar() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <Link href="/" className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-sm font-bold text-white">S</div>
-                            <span className="text-xl font-bold bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent">ShopVibe</span>
+                            {branding?.logoUrl ? (
+                                <img src={branding.logoUrl} alt={branding.storeName || 'Store'} className="h-8 object-contain" />
+                            ) : (
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-sm font-bold text-white">{branding?.storeInitial || 'S'}</div>
+                            )}
+                            <span className="text-xl font-bold bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent">{branding?.storeName || 'ShopVibe'}</span>
                         </Link>
                         <div className="flex items-center gap-3 sm:gap-5">
                             <Link href="/" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors hidden sm:block">Shop</Link>
                             <Link href="/track" className="text-sm font-medium text-[var(--text-muted)] hover:text-violet-500 transition-colors hidden sm:flex items-center gap-1"><PackageSearch className="w-4 h-4" /> Track Order</Link>
                             <Link href="/checkout" className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors hidden sm:block">Checkout</Link>
-                            <Link href="/checkout" className="relative text-[var(--text-muted)] hover:text-violet-500 transition-colors p-1">
+                            <Link href="/checkout" aria-label="Cart" className="relative text-[var(--text-muted)] hover:text-violet-500 transition-colors p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer">
                                 <ShoppingCart className="w-5 h-5" />
                                 {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
                             </Link>
-                            <Link href="/wishlist" className="relative text-[var(--text-muted)] hover:text-pink-500 transition-colors p-1">
+                            <Link href="/wishlist" aria-label="Wishlist" className="relative text-[var(--text-muted)] hover:text-pink-500 transition-colors p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer">
                                 <Heart className="w-5 h-5" />
                                 {wishCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">{wishCount}</span>}
                             </Link>
-                            <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-[var(--card-bg)] text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors">
+                            <button onClick={toggleTheme} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--card-bg)] text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors cursor-pointer">
                                 {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                            </button>
+                            {/* Mobile hamburger */}
+                            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu" className="sm:hidden p-2 rounded-lg hover:bg-[var(--card-bg)] text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors cursor-pointer">
+                                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                             </button>
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Menu Dropdown */}
+                {mobileMenuOpen && (
+                    <div className="sm:hidden border-t border-[var(--card-border)] bg-[var(--background)]/95 backdrop-blur-xl animate-fade-in-up">
+                        <div className="px-4 py-3 space-y-1">
+                            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-bg)] transition-colors">
+                                Shop
+                            </Link>
+                            <Link href="/track" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:text-violet-500 hover:bg-[var(--card-bg)] transition-colors">
+                                <PackageSearch className="w-4 h-4" /> Track Order
+                            </Link>
+                            <Link href="/checkout" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-bg)] transition-colors">
+                                Checkout
+                            </Link>
+                            <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-muted)] hover:text-pink-500 hover:bg-[var(--card-bg)] transition-colors">
+                                Wishlist {wishCount > 0 && <span className="ml-1 text-xs text-pink-500">({wishCount})</span>}
+                            </Link>
+                        </div>
+                    </div>
+                )}
             </nav>
             {/* Marquee Ticker */}
             {marquee?.enabled && marquee.text && (

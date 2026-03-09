@@ -7,7 +7,9 @@ import {
     Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X, Copy,
     DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
     ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star, Users,
-    Send, Truck, MapPin, PackageCheck, RefreshCw
+    Send, Truck, MapPin, PackageCheck, RefreshCw, CreditCard,
+    Store, Globe, Phone, Mail, Facebook, Instagram, Youtube, MessageCircle,
+    Type, FileText, Palette, Eye, PieChart, Repeat, Target, Layout
 } from "lucide-react";
 import Image from "next/image";
 import { sendOrderToPathao } from '@/app/actions/pathaoIntegration';
@@ -16,7 +18,7 @@ import React from 'react';
 
 // Types
 interface Variant { _id?: string; label: string; size: string; color: string; stock: number; priceAdjust: number; }
-interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; category: string; stock: number; variants: Variant[]; createdAt?: string; }
+interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; videoUrl?: string; category: string; stock: number; variants: Variant[]; createdAt?: string; }
 interface OrderProduct { productId: string; name: string; price: number; quantity: number; }
 interface Order { _id: string; orderNumber: number; products: OrderProduct[]; totalAmount: number; customerName: string; customerPhone: string; customerAddress: string; bkashNumber: string; transactionId: string; status: string; createdAt: string; couponCode?: string; discountAmount?: number; paymentMethod?: string; shippingZone?: string; shippingCost?: number; consignmentId?: string; pathaoStatus?: string; }
 interface Stats { totalOrders: number; totalRevenue: number; totalProducts: number; }
@@ -41,6 +43,7 @@ function getTimelineIndex(pathaoStatus?: string): number {
     return idx >= 0 ? idx : 0;
 }
 const STATUS_COLORS: Record<string, string> = {
+    incomplete: "text-gray-400 bg-gray-400/10 border-gray-400/20",
     pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
     confirmed: "text-blue-400 bg-blue-400/10 border-blue-400/20",
     shipped: "text-violet-400 bg-violet-400/10 border-violet-400/20",
@@ -99,6 +102,7 @@ export default function AdminPage() {
     const [pName, setPName] = useState(""); const [pPrice, setPPrice] = useState(""); const [pDesc, setPDesc] = useState("");
     const [pCat, setPCat] = useState("General"); const [pStock, setPStock] = useState(""); const [pImages, setPImages] = useState<File[]>([]);
     const [pPreviews, setPPreviews] = useState<string[]>([]); const [pVariants, setPVariants] = useState<Variant[]>([]);
+    const [pVideo, setPVideo] = useState("");
     const [pMsg, setPMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
     const [dragOver, setDragOver] = useState(false);
@@ -113,6 +117,7 @@ export default function AdminPage() {
     const [eName, setEName] = useState(""); const [ePrice, setEPrice] = useState(""); const [eDesc, setEDesc] = useState("");
     const [eCat, setECat] = useState(""); const [eStock, setEStock] = useState(""); const [eVariants, setEVariants] = useState<Variant[]>([]);
     const [eImages, setEImages] = useState<string[]>([]); const editFileRef = useRef<HTMLInputElement>(null);
+    const [eVideo, setEVideo] = useState("");
 
     // Orders search/filter/pagination
     const [oSearch, setOSearch] = useState(""); const [oStatus, setOStatus] = useState("all");
@@ -145,7 +150,19 @@ export default function AdminPage() {
     const [sLoading, setSLoading] = useState(false);
     const [sShowDeliveryZone, setSShowDeliveryZone] = useState(true);
     const [sFeatures, setSFeatures] = useState({ trackOrder: true, productReviews: true, relatedProducts: true });
-
+    // New Settings States
+    const [sBranding, setSBranding] = useState({ storeName: 'ShopVibe', storeTagline: 'Premium E-Commerce Bangladesh', logoUrl: '', faviconUrl: '', storeInitial: 'S' });
+    const [sContact, setSContact] = useState({ phone: '+880 1XXXXXXXXX', email: 'support@shopvibe.com', address: '123 Commerce Avenue, Dhaka, Bangladesh' });
+    const [sSocial, setSSocial] = useState({ facebook: '', instagram: '', whatsapp: '', youtube: '' });
+    const [sHero, setSHero] = useState({ badge: 'Premium Collection', title: 'Discover Quality', titleHighlight: 'Products', description: 'Curated collection of premium products. Shop with confidence, pay with Bkash, Nagad or Rocket.', showNewArrivals: true });
+    const [sFooter, setSFooter] = useState({ description: 'Your trusted destination for premium products in Bangladesh. Quality guaranteed.', copyrightText: '© {year} ShopVibe. All rights reserved. Made with 💜 in Bangladesh', paymentMethods: ['Bkash', 'Nagad', 'Rocket'] as string[], quickLinks: [{ label: 'Shop', href: '/' }, { label: 'Checkout', href: '/checkout' }, { label: 'Wishlist', href: '/wishlist' }] });
+    const [sSeo, setSSeo] = useState({ siteTitle: 'ShopVibe — Premium E-Commerce Bangladesh', metaDescription: '', keywords: '', ogImage: '', siteUrl: '' });
+    const [sAppearance, setSAppearance] = useState({ productsPerRow: 4, defaultTheme: 'dark' });
+    // Analytics
+    const [analyticsData, setAnalyticsData] = useState<{ repeatCustomers: any[]; completionRate: any[]; byCategory: any[] }>({ repeatCustomers: [], completionRate: [], byCategory: [] });
+    const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
+    // Settings sub-tab
+    const [settingsTab, setSettingsTab] = useState<'general' | 'branding' | 'pages' | 'seo' | 'appearance'>('general');
     // Live visitor counter
     const [liveVisitors, setLiveVisitors] = useState(0);
 
@@ -236,12 +253,13 @@ export default function AdminPage() {
         const fd = new FormData();
         fd.append("name", pName); fd.append("price", pPrice); fd.append("description", pDesc);
         fd.append("category", pCat); fd.append("stock", pStock || "0");
+        if (pVideo) fd.append("videoUrl", pVideo);
         if (pVariants.length > 0) fd.append("variants", JSON.stringify(pVariants));
         pImages.forEach(img => fd.append("images", img));
         try {
             await axios.post(`/api/products`, fd, { headers: { "Content-Type": "multipart/form-data" } });
             showToast("success", "Product uploaded!"); setPName(""); setPPrice(""); setPDesc(""); setPCat("General");
-            setPStock(""); setPImages([]); setPPreviews([]); setPVariants([]); if (fileRef.current) fileRef.current.value = "";
+            setPStock(""); setPImages([]); setPPreviews([]); setPVariants([]); setPVideo(""); if (fileRef.current) fileRef.current.value = "";
             fetchProducts(); fetchStats();
         } catch (err: any) { setPMsg({ type: "error", text: err.response?.data?.message || "Failed." }); }
         finally { setLoading(false); }
@@ -263,10 +281,10 @@ export default function AdminPage() {
     const toggleSelectAll = () => { if (selectedIds.size === pagedProducts.length) setSelectedIds(new Set()); else setSelectedIds(new Set(pagedProducts.map(p => p._id))); };
 
     // ─── Edit Product ───
-    const openEdit = (p: Product) => { setEditP(p); setEName(p.name); setEPrice(String(p.price)); setEDesc(p.description); setECat(p.category || "General"); setEStock(String(p.stock || 0)); setEVariants(p.variants || []); setEImages([...p.imageUrls]); };
+    const openEdit = (p: Product) => { setEditP(p); setEName(p.name); setEPrice(String(p.price)); setEDesc(p.description); setECat(p.category || "General"); setEStock(String(p.stock || 0)); setEVariants(p.variants || []); setEImages([...p.imageUrls]); setEVideo(p.videoUrl || ""); };
     const saveEdit = async () => {
         if (!editP) return;
-        try { await axios.put(`/api/products/${editP._id}`, { name: eName, price: ePrice, description: eDesc, category: eCat, stock: eStock, variants: eVariants, imageUrls: eImages }); showToast("success", "Updated!"); setEditP(null); fetchProducts(); fetchStats(); }
+        try { await axios.put(`/api/products/${editP._id}`, { name: eName, price: ePrice, description: eDesc, category: eCat, stock: eStock, variants: eVariants, imageUrls: eImages, videoUrl: eVideo }); showToast("success", "Updated!"); setEditP(null); fetchProducts(); fetchStats(); }
         catch { showToast("error", "Failed."); }
     };
     const addEditImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,6 +339,13 @@ export default function AdminPage() {
             if (r.data.marketing) setSMarketing(r.data.marketing);
             if (r.data.showDeliveryZone !== undefined) setSShowDeliveryZone(r.data.showDeliveryZone);
             if (r.data.features) setSFeatures(r.data.features);
+            if (r.data.storeBranding) setSBranding(r.data.storeBranding);
+            if (r.data.contactInfo) setSContact(r.data.contactInfo);
+            if (r.data.socialLinks) setSSocial(r.data.socialLinks);
+            if (r.data.heroContent) setSHero(r.data.heroContent);
+            if (r.data.footerContent) setSFooter(r.data.footerContent);
+            if (r.data.seo) setSSeo(r.data.seo);
+            if (r.data.appearance) setSAppearance(r.data.appearance);
         } catch { }
     };
     const saveSetting = async (key: string, value: any) => {
@@ -577,6 +602,7 @@ export default function AdminPage() {
                                 </div>
                                 <input ref={fileRef} type="file" accept="image/*" multiple onChange={onImgChange} className="hidden" />
                             </div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Video URL (Optional)</label><input type="text" value={pVideo} onChange={e => setPVideo(e.target.value)} placeholder="YouTube, Vimeo, or direct MP4 link" className="input-field" /></div>
                             <VariantEditor variants={pVariants} setVariants={setPVariants} />
                             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
                                 {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Uploading...</> : <><Upload className="w-5 h-5" />Upload Product</>}
@@ -644,32 +670,98 @@ export default function AdminPage() {
                     <div className="flex flex-col sm:flex-row gap-3 mb-6">
                         <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input type="text" value={oSearch} onChange={e => { setOSearch(e.target.value); setOPage(1); }} placeholder="Search name, phone, TrxID..." className="input-field pl-10 text-sm" /></div>
                         <div className="relative"><select value={oStatus} onChange={e => { setOStatus(e.target.value); setOPage(1); }} className="appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-violet-500/50 cursor-pointer capitalize">
-                            <option value="all" className="bg-[#1a1225]">All Status</option>{["pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="bg-[#1a1225] capitalize">{s}</option>)}
+                            <option value="all" className="bg-[#1a1225]">All Status</option>{["incomplete", "pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="bg-[#1a1225] capitalize">{s}</option>)}
                         </select><ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
                     </div>
                     {orders.length === 0 ? <div className="glass-card p-16 text-center" style={{ transform: "none" }}><ShoppingCart className="w-12 h-12 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No orders found.</p></div> : (
                         <div className="space-y-4">
                             {orders.map(o => (
-                                <div key={o._id} className="glass-card p-5" style={{ transform: "none" }}>
-                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-1"><h3 className="font-semibold text-white">Order #{o.orderNumber}</h3><span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${STATUS_COLORS[o.status]}`}>{o.status}</span></div>
-                                            <p className="text-sm text-gray-400">{new Date(o.createdAt).toLocaleString()}</p>
+                                <div key={o._id} className="glass-card p-0 overflow-hidden" style={{ transform: "none" }}>
+                                    {/* Header */}
+                                    <div className="bg-white/[0.02] border-b border-white/5 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-400">
+                                                <Package className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <h3 className="font-bold text-white text-base">Order #{o.orderNumber}</h3>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[o.status]}`}>{o.status}</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500">{new Date(o.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                            </div>
                                         </div>
-                                        <div className="relative"><select value={o.status} onChange={e => updateStatus(o._id, e.target.value)} className="appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-violet-500/50 cursor-pointer capitalize">
-                                            {["pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="bg-[#1a1225] capitalize">{s}</option>)}</select><ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
+                                        <div className="relative flex items-center gap-2">
+                                            <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Status:</span>
+                                            <div className="relative">
+                                                <select value={o.status} onChange={e => updateStatus(o._id, e.target.value)} className="appearance-none bg-white/5 border border-white/10 text-white text-xs font-medium rounded-lg px-3 py-1.5 pr-7 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer capitalize">
+                                                    {["incomplete", "pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="bg-[#1a1225] capitalize">{s}</option>)}
+                                                </select>
+                                                <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                                        <div><span className="text-gray-500">Customer</span><p className="text-white font-medium">{o.customerName}</p><p className="text-gray-400">{o.customerPhone}</p></div>
-                                        <div><span className="text-gray-500">Address</span><p className="text-white">{o.customerAddress}</p></div>
-                                        <div><span className="text-gray-500">Payment</span><p className="text-white">Bkash: {o.bkashNumber}</p><div className="flex items-center gap-1"><span className="text-gray-400">TrxID: {o.transactionId}</span><button onClick={() => copyText(o.transactionId)} className="p-1 hover:bg-white/10 rounded"><Copy className="w-3 h-3 text-violet-400" /></button></div></div>
+
+                                    {/* Details */}
+                                    <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 text-gray-500"><Users className="w-4 h-4" /></div>
+                                            <div>
+                                                <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Customer</span>
+                                                <p className="text-gray-200 font-medium">{o.customerName}</p>
+                                                <p className="text-gray-400 text-xs mt-0.5 flex items-center gap-1.5"><Phone className="w-3 h-3" /> {o.customerPhone}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 text-gray-500"><MapPin className="w-4 h-4" /></div>
+                                            <div>
+                                                <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Delivery Info</span>
+                                                <p className="text-gray-300 text-sm leading-relaxed">{o.customerAddress}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-0.5 text-gray-500"><CreditCard className="w-4 h-4" /></div>
+                                            <div>
+                                                <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Payment</span>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">{o.paymentMethod || 'COD'}</span>
+                                                {o.paymentMethod !== 'cod' && o.transactionId && (
+                                                    <div className="mt-1.5 bg-black/20 rounded p-1.5 outline outline-1 outline-white/5">
+                                                        <div className="text-[10px] text-gray-500 flex justify-between"><span>A/C:</span><span className="text-gray-300 font-mono">{o.bkashNumber}</span></div>
+                                                        <div className="text-[10px] text-gray-500 flex justify-between items-center mt-0.5">
+                                                            <span>TrxID:</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-violet-300 font-mono">{o.transactionId}</span>
+                                                                <button onClick={() => copyText(o.transactionId)} className="hover:bg-white/10 p-0.5 rounded"><Copy className="w-2.5 h-2.5" /></button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="mt-4 pt-3 border-t border-white/5">
-                                        <div className="flex flex-wrap gap-3">{o.products.map((p, i) => <span key={i} className="text-xs bg-white/5 px-3 py-1.5 rounded-lg text-gray-300">{p.name} × {p.quantity} — ৳{(p.price * p.quantity).toLocaleString()}</span>)}</div>
-                                        {o.couponCode && <p className="text-xs text-fuchsia-400 mt-2">🎫 Coupon: {o.couponCode} (-৳{(o.discountAmount || 0).toLocaleString()})</p>}
-                                        <p className="text-right font-bold text-lg gradient-text mt-2">৳{o.totalAmount.toLocaleString()}</p>
-                                        <div className="flex justify-end mt-3">
-                                            <button onClick={() => printInvoice(o)} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/20 transition-colors text-xs font-medium"><Printer className="w-3.5 h-3.5" />Print Invoice</button>
+
+                                    {/* Products & Footer */}
+                                    <div className="bg-black/20 p-4 sm:p-5 border-t border-white/5 flex flex-col md:flex-row md:items-end justify-between gap-5">
+                                        <div className="flex-1">
+                                            <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Order Items</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {o.products.map((p, i) => (
+                                                    <div key={i} className="flex items-center gap-2 bg-white/5 border border-white/5 px-2.5 py-1.5 rounded-md">
+                                                        <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-300">{p.quantity}</div>
+                                                        <span className="text-xs text-gray-300">{p.name} <span className="text-gray-500 mx-1">•</span> ৳{(p.price * p.quantity).toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {o.couponCode && <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 rounded text-xs font-medium"><Tag className="w-3 h-3" /> {o.couponCode} applied (-৳{(o.discountAmount || 0).toLocaleString()})</div>}
+                                        </div>
+                                        <div className="flex flex-col md:items-end gap-3 min-w-[200px]">
+                                            <div className="md:text-right">
+                                                <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold block mb-0.5">Total Amount</span>
+                                                <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">৳{o.totalAmount.toLocaleString()}</span>
+                                            </div>
+                                            <button onClick={() => printInvoice(o)} className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 border border-violet-500/20 rounded-lg transition-colors text-sm font-semibold">
+                                                <Printer className="w-4 h-4" /> View Invoice
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -766,7 +858,7 @@ export default function AdminPage() {
 
             {/* ═══ SETTINGS ═══ */}
             {tab === "settings" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
                     {/* Shipping Zones */}
                     <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
                         <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-violet-400" /> Shipping Zones</h2>
@@ -790,7 +882,7 @@ export default function AdminPage() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="text-sm font-medium text-white">Show Delivery Zone on Checkout</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">Toggle delivery zone picker visibility for customers</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Toggle delivery zone picker</p>
                                 </div>
                                 <button onClick={async () => { const nv = !sShowDeliveryZone; setSShowDeliveryZone(nv); await saveSetting('showDeliveryZone', nv); }} className={`relative w-12 h-6 rounded-full transition-colors ${sShowDeliveryZone ? 'bg-sky-500' : 'bg-gray-700'}`}>
                                     <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sShowDeliveryZone ? 'translate-x-6' : 'translate-x-0.5'}`} />
@@ -818,7 +910,7 @@ export default function AdminPage() {
                     </div>
 
                     {/* Banner / Notice */}
-                    <div className="glass-card p-6 sm:p-8 lg:col-span-2" style={{ transform: "none" }}>
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
                         <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Bell className="w-5 h-5 text-yellow-400" /> Store Banner / Notice</h2>
                         <div className="flex items-center gap-3 mb-4">
                             <button onClick={() => setSBanner({ ...sBanner, enabled: !sBanner.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sBanner.enabled ? 'bg-violet-500' : 'bg-gray-700'}`}>
@@ -830,117 +922,217 @@ export default function AdminPage() {
                         {sBanner.enabled && sBanner.text && (
                             <div className="p-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 text-sm text-gray-200 mb-4">Preview: {sBanner.text}</div>
                         )}
-                        <button onClick={() => saveSetting('banner', sBanner)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Banner</button>
-                    </div>
-
-                    {/* Marquee Ticker */}
-                    <div className="glass-card p-6 sm:p-8 lg:col-span-2" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-emerald-400" /> Marquee / Scrolling Text</h2>
-                        <div className="flex items-center gap-3 mb-4">
-                            <button onClick={() => setSMarquee({ ...sMarquee, enabled: !sMarquee.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sMarquee.enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}>
-                                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sMarquee.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                            </button>
-                            <span className="text-sm text-gray-400">{sMarquee.enabled ? 'Ticker Visible' : 'Ticker Hidden'}</span>
-                        </div>
-                        <input type="text" value={sMarquee.text} onChange={e => setSMarquee({ ...sMarquee, text: e.target.value })} placeholder="e.g. 🔥 Flash Sale — 50% OFF on all items! | Free Delivery inside Dhaka" className="input-field mb-4" />
-
-                        {/* Speed */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-400 mb-2 block">Speed: {sMarquee.speed}s (lower = faster)</label>
-                            <input type="range" min="5" max="30" value={sMarquee.speed} onChange={e => setSMarquee({ ...sMarquee, speed: parseInt(e.target.value) })} className="w-full accent-violet-500" />
-                            <div className="flex justify-between text-xs text-gray-600 mt-1"><span>Fast (5s)</span><span>Slow (30s)</span></div>
-                        </div>
-
-                        {/* Background Color */}
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-400 mb-2 block">Background Color</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {[
-                                    { id: 'gradient', label: 'Gradient', cls: 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' },
-                                    { id: 'red', label: 'Red', cls: 'bg-red-600' },
-                                    { id: 'blue', label: 'Blue', cls: 'bg-blue-600' },
-                                    { id: 'green', label: 'Green', cls: 'bg-emerald-600' },
-                                    { id: 'orange', label: 'Orange', cls: 'bg-orange-500' },
-                                    { id: 'black', label: 'Dark', cls: 'bg-gray-900' },
-                                ].map(c => (
-                                    <button key={c.id} onClick={() => setSMarquee({ ...sMarquee, bgColor: c.id })} className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white border-2 transition-all ${c.cls} ${sMarquee.bgColor === c.id ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>{c.label}</button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {sMarquee.enabled && sMarquee.text && (
-                            <div className={`p-2 rounded-xl text-sm text-white mb-4 overflow-hidden ${sMarquee.bgColor === 'gradient' ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' :
-                                sMarquee.bgColor === 'red' ? 'bg-red-600' :
-                                    sMarquee.bgColor === 'blue' ? 'bg-blue-600' :
-                                        sMarquee.bgColor === 'green' ? 'bg-emerald-600' :
-                                            sMarquee.bgColor === 'orange' ? 'bg-orange-500' : 'bg-gray-900'
-                                }`}>
-                                <span className="marquee-text" style={{ animationDuration: `${sMarquee.speed}s` }}>{sMarquee.text}</span>
-                            </div>
-                        )}
-                        <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
+                        <button onClick={() => saveSetting('banner', sBanner)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Banner</button>
                     </div>
 
                     {/* Marketing & Tracking */}
-                    <div className="glass-card p-6 sm:p-8 lg:col-span-2" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-400" /> Marketing & Tracking IDs</h2>
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-400" /> Tracking IDs</h2>
                         <div className="space-y-4 mb-6">
                             <div>
                                 <label className="text-sm text-gray-400 mb-1 block">Google Tag Manager (GTM) ID</label>
                                 <input type="text" value={sMarketing.gtmId} onChange={e => setSMarketing({ ...sMarketing, gtmId: e.target.value })} placeholder="e.g. GTM-XXXXXXX" className="input-field" />
-                                <p className="text-xs text-gray-500 mt-1">Leave empty to disable. Manages all other tags if configured correctly.</p>
                             </div>
                             <div>
                                 <label className="text-sm text-gray-400 mb-1 block">Meta Pixel (Facebook) ID</label>
                                 <input type="text" value={sMarketing.pixelId} onChange={e => setSMarketing({ ...sMarketing, pixelId: e.target.value })} placeholder="e.g. 123456789012345" className="input-field" />
-                                <p className="text-xs text-gray-500 mt-1">Leave empty to disable. Used for Facebook Ads tracking (Page View, Add To Cart, Purchase).</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-400 mb-1 block">Google Analytics 4 (GA4) Measurement ID</label>
+                                <label className="text-sm text-gray-400 mb-1 block">GA4 Measurement ID</label>
                                 <input type="text" value={sMarketing.ga4Id} onChange={e => setSMarketing({ ...sMarketing, ga4Id: e.target.value })} placeholder="e.g. G-XXXXXXXXXX" className="input-field" />
-                                <p className="text-xs text-gray-500 mt-1">Leave empty to disable. Note: If you use GTM to deploy GA4, you do not need to enter this here.</p>
                             </div>
                         </div>
-                        <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
+                        <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
+                    </div>
+
+                    {/* Marquee Ticker */}
+                    <div className="glass-card p-6 sm:p-8 xl:col-span-2" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-emerald-400" /> Marquee / Scrolling Text</h2>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <button onClick={() => setSMarquee({ ...sMarquee, enabled: !sMarquee.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sMarquee.enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sMarquee.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
+                                    <span className="text-sm text-gray-400">{sMarquee.enabled ? 'Ticker Visible' : 'Ticker Hidden'}</span>
+                                </div>
+                                <input type="text" value={sMarquee.text} onChange={e => setSMarquee({ ...sMarquee, text: e.target.value })} placeholder="e.g. 🔥 Flash Sale — 50% OFF on all items! | Free Delivery inside Dhaka" className="input-field mb-4" />
+
+                                {sMarquee.enabled && sMarquee.text && (
+                                    <div className={`p-2 rounded-xl text-sm text-white mt-4 overflow-hidden ${sMarquee.bgColor === 'gradient' ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' :
+                                        sMarquee.bgColor === 'red' ? 'bg-red-600' :
+                                            sMarquee.bgColor === 'blue' ? 'bg-blue-600' :
+                                                sMarquee.bgColor === 'green' ? 'bg-emerald-600' :
+                                                    sMarquee.bgColor === 'orange' ? 'bg-orange-500' : 'bg-gray-900'
+                                        }`}>
+                                        <span className="marquee-text" style={{ animationDuration: `${sMarquee.speed}s` }}>{sMarquee.text}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                {/* Speed */}
+                                <div className="mb-4">
+                                    <label className="text-sm text-gray-400 mb-2 block">Speed: {sMarquee.speed}s (lower = faster)</label>
+                                    <input type="range" min="5" max="30" value={sMarquee.speed} onChange={e => setSMarquee({ ...sMarquee, speed: parseInt(e.target.value) })} className="w-full accent-violet-500" />
+                                    <div className="flex justify-between text-xs text-gray-600 mt-1"><span>Fast (5s)</span><span>Slow (30s)</span></div>
+                                </div>
+
+                                {/* Background Color */}
+                                <div className="mb-4">
+                                    <label className="text-sm text-gray-400 mb-2 block">Background Color</label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {[
+                                            { id: 'gradient', label: 'Gradient', cls: 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' },
+                                            { id: 'red', label: 'Red', cls: 'bg-red-600' },
+                                            { id: 'blue', label: 'Blue', cls: 'bg-blue-600' },
+                                            { id: 'green', label: 'Green', cls: 'bg-emerald-600' },
+                                            { id: 'orange', label: 'Orange', cls: 'bg-orange-500' },
+                                            { id: 'black', label: 'Dark', cls: 'bg-gray-900' },
+                                        ].map(c => (
+                                            <button key={c.id} onClick={() => setSMarquee({ ...sMarquee, bgColor: c.id })} className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white border-2 transition-all ${c.cls} ${sMarquee.bgColor === c.id ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>{c.label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="btn-primary w-full mt-2 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Feature Toggles */}
-                    <div className="glass-card p-6 sm:p-8 lg:col-span-2" style={{ transform: "none" }}>
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
                         <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-fuchsia-400" /> Feature Toggles</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
                                 <div>
-                                    <h3 className="text-sm font-medium text-white mb-1">Track Order Page</h3>
-                                    <p className="text-xs text-gray-500 max-w-[200px]">Allow customers to search their order status publicly.</p>
+                                    <h3 className="text-sm font-medium text-white mb-1">Track Order</h3>
+                                    <p className="text-xs text-gray-500">Public order tracking.</p>
                                 </div>
                                 <button onClick={() => setSFeatures({ ...sFeatures, trackOrder: !sFeatures.trackOrder })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.trackOrder ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
                                     <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.trackOrder ? 'translate-x-6' : 'translate-x-0.5'}`} />
                                 </button>
                             </div>
-
                             <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
                                 <div>
-                                    <h3 className="text-sm font-medium text-white mb-1">Product Reviews</h3>
-                                    <p className="text-xs text-gray-500 max-w-[200px]">Enable the 5-star Customer Review & Comments system.</p>
+                                    <h3 className="text-sm font-medium text-white mb-1">Reviews</h3>
+                                    <p className="text-xs text-gray-500">Enable 5-star reviews.</p>
                                 </div>
                                 <button onClick={() => setSFeatures({ ...sFeatures, productReviews: !sFeatures.productReviews })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.productReviews ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
                                     <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.productReviews ? 'translate-x-6' : 'translate-x-0.5'}`} />
                                 </button>
                             </div>
-
-                            <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-sm font-medium text-white mb-1">Related Products</h3>
-                                    <p className="text-xs text-gray-500 max-w-[200px]">Show "You May Also Like" items at the bottom of products.</p>
+                            <div className="glass-card p-4 border border-white/5 flex flex-col justify-between h-full md:col-span-2">
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-white mb-1">Related Products</h3>
+                                        <p className="text-xs text-gray-500">Show items at bottom.</p>
+                                    </div>
+                                    <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
+                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                    </button>
                                 </div>
-                                <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                </button>
                             </div>
-
                         </div>
-                        <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="btn-primary flex items-center justify-center gap-2 text-sm px-8">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features Setup</button>
+                        <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm mb-2">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features</button>
+                    </div>
+
+                    {/* ═══ STORE BRANDING ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Store className="w-5 h-5 text-violet-400" /> Store Branding</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Name</label><input type="text" value={sBranding.storeName} onChange={e => setSBranding({ ...sBranding, storeName: e.target.value })} className="input-field" /></div>
+                            <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Tagline</label><input type="text" value={sBranding.storeTagline} onChange={e => setSBranding({ ...sBranding, storeTagline: e.target.value })} className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Logo URL</label><input type="text" value={sBranding.logoUrl} onChange={e => setSBranding({ ...sBranding, logoUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Favicon URL</label><input type="text" value={sBranding.faviconUrl} onChange={e => setSBranding({ ...sBranding, faviconUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Store Initial</label><input type="text" maxLength={2} value={sBranding.storeInitial} onChange={e => setSBranding({ ...sBranding, storeInitial: e.target.value })} className="input-field w-20" /></div>
+                            {sBranding.logoUrl && <div className="p-3 bg-white/5 rounded-xl flex items-center justify-center"><img src={sBranding.logoUrl} alt="Logo" className="h-10 object-contain" /></div>}
+                        </div>
+                        <button onClick={() => saveSetting('storeBranding', sBranding)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Branding</button>
+                    </div>
+
+                    {/* ═══ CONTACT INFO ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Phone className="w-5 h-5 text-emerald-400" /> Contact Info</h2>
+                        <div className="space-y-4 mb-6">
+                            <div><label className="text-sm text-gray-400 mb-1 block">Phone Number</label><input type="text" value={sContact.phone} onChange={e => setSContact({ ...sContact, phone: e.target.value })} className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Email</label><input type="email" value={sContact.email} onChange={e => setSContact({ ...sContact, email: e.target.value })} className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Address</label><textarea value={sContact.address} onChange={e => setSContact({ ...sContact, address: e.target.value })} rows={2} className="input-field resize-none" /></div>
+                        </div>
+                        <button onClick={() => saveSetting('contactInfo', sContact)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Contact</button>
+                    </div>
+
+                    {/* ═══ SOCIAL LINKS ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Social Links</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Facebook className="w-3.5 h-3.5" /> Facebook</label><input type="text" value={sSocial.facebook} onChange={e => setSSocial({ ...sSocial, facebook: e.target.value })} placeholder="URL" className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Instagram className="w-3.5 h-3.5" /> Instagram</label><input type="text" value={sSocial.instagram} onChange={e => setSSocial({ ...sSocial, instagram: e.target.value })} placeholder="URL" className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</label><input type="text" value={sSocial.whatsapp} onChange={e => setSSocial({ ...sSocial, whatsapp: e.target.value })} placeholder="Number" className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Youtube className="w-3.5 h-3.5" /> YouTube</label><input type="text" value={sSocial.youtube} onChange={e => setSSocial({ ...sSocial, youtube: e.target.value })} placeholder="URL" className="input-field" /></div>
+                        </div>
+                        <button onClick={() => saveSetting('socialLinks', sSocial)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Social</button>
+                    </div>
+
+                    {/* ═══ HERO SECTION ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Layout className="w-5 h-5 text-pink-400" /> Homepage Hero</h2>
+                        <div className="space-y-4 mb-6">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setSHero({ ...sHero, showNewArrivals: !sHero.showNewArrivals })} className={`relative w-12 h-6 rounded-full transition-colors ${sHero.showNewArrivals ? 'bg-pink-500' : 'bg-gray-700'}`}>
+                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sHero.showNewArrivals ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                </button>
+                                <label className="text-sm text-gray-400">Show New Arrivals Badge</label>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label className="text-sm text-gray-400 mb-1 block">Badge Text</label><input type="text" value={sHero.badge} onChange={e => setSHero({ ...sHero, badge: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Title</label><input type="text" value={sHero.title} onChange={e => setSHero({ ...sHero, title: e.target.value })} className="input-field" /></div>
+                            </div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Title Highlight</label><input type="text" value={sHero.titleHighlight} onChange={e => setSHero({ ...sHero, titleHighlight: e.target.value })} className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={sHero.description} onChange={e => setSHero({ ...sHero, description: e.target.value })} rows={2} className="input-field resize-none" /></div>
+                        </div>
+                        <button onClick={() => saveSetting('heroContent', sHero)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Hero</button>
+                    </div>
+
+                    {/* ═══ FOOTER CONTENT ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" /> Footer Content</h2>
+                        <div className="space-y-4 mb-6">
+                            <div><label className="text-sm text-gray-400 mb-1 block">Copyright Text ({'{year}'})</label><input type="text" value={sFooter.copyrightText} onChange={e => setSFooter({ ...sFooter, copyrightText: e.target.value })} className="input-field" /></div>
+                            <div>
+                                <label className="text-sm text-gray-400 mb-1 block">Payment Methods (csv)</label>
+                                <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="input-field" placeholder="Bkash, Nagad" />
+                            </div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Footer Description</label><textarea value={sFooter.description} onChange={e => setSFooter({ ...sFooter, description: e.target.value })} rows={3} className="input-field resize-none" /></div>
+                        </div>
+                        <button onClick={() => saveSetting('footerContent', sFooter)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Footer</button>
+                    </div>
+
+                    {/* ═══ SEO SETTINGS ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-400" /> SEO Tracking & Config</h2>
+                        <div className="space-y-4 mb-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label className="text-sm text-gray-400 mb-1 block">Site Title</label><input type="text" value={sSeo.siteTitle} onChange={e => setSSeo({ ...sSeo, siteTitle: e.target.value })} className="input-field" /></div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Site URL</label><input type="text" value={sSeo.siteUrl} onChange={e => setSSeo({ ...sSeo, siteUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                            </div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Keywords</label><input type="text" value={sSeo.keywords} onChange={e => setSSeo({ ...sSeo, keywords: e.target.value })} className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">OG Image URL</label><input type="text" value={sSeo.ogImage} onChange={e => setSSeo({ ...sSeo, ogImage: e.target.value })} placeholder="https://..." className="input-field" /></div>
+                            <div><label className="text-sm text-gray-400 mb-1 block">Meta Description</label><textarea value={sSeo.metaDescription} onChange={e => setSSeo({ ...sSeo, metaDescription: e.target.value })} rows={3} className="input-field resize-none" /></div>
+                        </div>
+                        <button onClick={() => saveSetting('seo', sSeo)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save SEO</button>
+                    </div>
+
+                    {/* ═══ APPEARANCE ═══ */}
+                    <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
+                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Palette className="w-5 h-5 text-orange-400" /> Appearance</h2>
+                        <div className="mb-6">
+                            <label className="text-sm text-gray-400 mb-3 block">Products Per Row (Desktop)</label>
+                            <div className="grid grid-cols-3 gap-2 border border-white/5 bg-white/5 rounded-xl p-1">
+                                {[3, 4, 5].map(n => (
+                                    <button key={n} onClick={() => setSAppearance({ ...sAppearance, productsPerRow: n })} className={`p-2 rounded-lg text-sm font-medium transition-all ${sAppearance.productsPerRow === n ? 'bg-violet-500/80 text-white shadow-lg shadow-violet-500/20' : 'text-gray-400 hover:text-white'}`}>{n} cols</button>
+                                ))}
+                            </div>
+                        </div>
+                        <button onClick={() => saveSetting('appearance', sAppearance)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Appearance</button>
                     </div>
 
                 </div>
@@ -1189,6 +1381,7 @@ export default function AdminPage() {
                                     <button type="button" onClick={() => editFileRef.current?.click()} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"><Plus className="w-3 h-3" />Add Images</button>
                                     <input ref={editFileRef} type="file" accept="image/*" multiple onChange={addEditImages} className="hidden" />
                                 </div>
+                                <div><label className="text-sm text-gray-400 mb-1 block">Video URL</label><input type="text" value={eVideo} onChange={e => setEVideo(e.target.value)} className="input-field" /></div>
                                 <VariantEditor variants={eVariants} setVariants={setEVariants} />
                                 <button onClick={saveEdit} className="btn-primary w-full flex items-center justify-center gap-2"><CheckCircle className="w-5 h-5" /> Save Changes</button>
                             </div>

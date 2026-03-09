@@ -4,7 +4,7 @@ import Order from '@/models/Order';
 import crypto from 'crypto';
 
 // This is the secret you set in your Pathao Merchant Dashboard for Webhooks
-const PATHAO_WEBHOOK_SECRET = 'f3992ecc-59da-4cbe-a049-a13da2018d51';
+const PATHAO_WEBHOOK_SECRET = process.env.PATHAO_WEBHOOK_SECRET || '';
 
 export async function POST(req: Request) {
     try {

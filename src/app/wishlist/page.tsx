@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Heart, Trash2, ShoppingCart } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Product { _id: string; name: string; price: number; description: string; imageUrls: string[]; category: string; stock: number; }
 
@@ -36,7 +35,23 @@ export default function WishlistPage() {
                 <h1 className="text-4xl font-bold gradient-text">Saved Items</h1>
                 <p className="text-gray-400 mt-2">{items.length} items saved for later</p>
             </div>
-            {loading ? <div className="text-center py-20 text-gray-500">Loading...</div> : items.length === 0 ? (
+            {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="glass-card overflow-hidden" style={{ transform: "none" }}>
+                            <div className="skeleton h-52 w-full" />
+                            <div className="p-5 space-y-3">
+                                <div className="skeleton h-5 w-3/4" />
+                                <div className="skeleton h-6 w-1/3" />
+                                <div className="flex gap-2">
+                                    <div className="skeleton h-9 flex-1 rounded-lg" />
+                                    <div className="skeleton h-9 flex-1 rounded-lg" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : items.length === 0 ? (
                 <div className="glass-card p-16 text-center" style={{ transform: "none" }}>
                     <Heart className="w-16 h-16 text-gray-700 mx-auto mb-4" />
                     <h2 className="text-xl font-semibold text-gray-400 mb-2">Your wishlist is empty</h2>
@@ -46,10 +61,10 @@ export default function WishlistPage() {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {items.map(p => (
-                        <div key={p._id} className="glass-card overflow-hidden group">
+                        <div key={p._id} className="glass-card overflow-hidden group cursor-pointer">
                             <div className="relative w-full h-52">
                                 <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                                <button onClick={() => remove(p._id)} className="absolute top-3 right-3 p-2 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors">
+                                <button onClick={() => remove(p._id)} aria-label={`Remove ${p.name} from wishlist`} className="absolute top-3 right-3 p-2 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors cursor-pointer">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>

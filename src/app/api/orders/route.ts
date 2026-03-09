@@ -2,19 +2,20 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
+import Coupon from '@/models/Coupon';
 import axios from 'axios';
 
+// Atomic order number generation using findOneAndUpdate to prevent race conditions
 const generateOrderNumber = async () => {
-    let orderNumber;
-    let isUnique = false;
-    while (!isUnique) {
-        orderNumber = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
-        const existingOrder = await Order.findOne({ orderNumber });
-        if (!existingOrder) {
-            isUnique = true;
-        }
-    }
-    return orderNumber;
+    const mongoose = await import('mongoose');
+    const CounterSchema = new mongoose.default.Schema({ _id: String, seq: { type: Number, default: 100000 } });
+    const Counter = mongoose.default.models.Counter || mongoose.default.model('Counter', CounterSchema);
+    const counter = await Counter.findOneAndUpdate(
+        { _id: 'orderNumber' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+    );
+    return counter.seq;
 };
 
 export async function POST(req: Request) {
@@ -33,18 +34,31 @@ export async function POST(req: Request) {
             discountAmount,
             paymentMethod,
             shippingZone,
-            shippingCost
+            shippingCost,
+            draftOrderId // [NEW] Optional draft order ID
         } = body;
 
-        // Basic Backend Validation (matching Express logic)
-        if (!products || products.length === 0) {
+        // @nodejs-best-practices & @security-audit: Input validation at boundary
+        if (!products || !Array.isArray(products) || products.length === 0) {
             return NextResponse.json({ message: 'Cart is empty' }, { status: 400 });
         }
-        if (!customerName || !customerPhone || !customerAddress) {
-            return NextResponse.json({ message: 'Customer details are required' }, { status: 400 });
+        if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 2) {
+            return NextResponse.json({ message: 'Valid customer name is required (min 2 chars)' }, { status: 400 });
+        }
+        if (!customerPhone || typeof customerPhone !== 'string' || !/^01[3-9]\d{8}$/.test(customerPhone.trim())) {
+            return NextResponse.json({ message: 'Valid Bangladesh phone number is required (01XXXXXXXXX)' }, { status: 400 });
+        }
+        if (!customerAddress || typeof customerAddress !== 'string' || customerAddress.trim().length < 5) {
+            return NextResponse.json({ message: 'Valid delivery address is required (min 5 chars)' }, { status: 400 });
         }
         if (paymentMethod !== 'cod' && (!bkashNumber || !transactionId)) {
             return NextResponse.json({ message: 'Payment details are required for this payment method' }, { status: 400 });
+        }
+        // @security-audit: Validate product quantities to prevent negative/zero values
+        for (const item of products) {
+            if (!item.productId || !item.quantity || item.quantity < 1 || !Number.isInteger(item.quantity)) {
+                return NextResponse.json({ message: 'Invalid product quantity' }, { status: 400 });
+            }
         }
 
         // Fetch product details from DB and calculate total to prevent tampering
@@ -75,37 +89,65 @@ export async function POST(req: Request) {
             });
         }
 
-        // Calculate final total (Products + Shipping - Discount)
-        let finalTotal = calculatedTotal + (Number(shippingCost) || 0) - (Number(discountAmount) || 0);
+        // Calculate final total (Products - Discount)
+        let finalTotal = calculatedTotal - (Number(discountAmount) || 0);
         if (finalTotal < 0) finalTotal = 0;
 
-        const orderNumber = await generateOrderNumber();
+        // [NEW] Use draft order if it exists
+        let savedOrder;
+        let orderNumber;
 
-        const newOrder = new Order({
-            products: orderProducts,
-            orderNumber,
-            totalAmount: finalTotal,
-            customerName,
-            customerPhone,
-            customerAddress,
-            bkashNumber: paymentMethod === 'cod' ? '' : bkashNumber,
-            transactionId: paymentMethod === 'cod' ? '' : transactionId,
-            couponCode,
-            discountAmount,
-            paymentMethod,
-            shippingZone,
-            shippingCost,
-            status: 'pending'
-        });
+        if (draftOrderId) {
+            const existingOrder = await Order.findById(draftOrderId);
+            if (existingOrder && existingOrder.status === 'incomplete') {
+                existingOrder.products = orderProducts;
+                existingOrder.totalAmount = finalTotal;
+                existingOrder.customerName = customerName;
+                existingOrder.customerPhone = customerPhone;
+                existingOrder.customerAddress = customerAddress;
+                existingOrder.bkashNumber = paymentMethod === 'cod' ? '' : bkashNumber;
+                existingOrder.transactionId = paymentMethod === 'cod' ? '' : transactionId;
+                existingOrder.couponCode = couponCode;
+                existingOrder.discountAmount = discountAmount;
+                existingOrder.paymentMethod = paymentMethod;
+                existingOrder.shippingZone = shippingZone;
+                existingOrder.shippingCost = shippingCost;
+                existingOrder.status = 'pending';
 
-        const savedOrder = await newOrder.save();
+                savedOrder = await existingOrder.save();
+
+                // For webhook backward compatibility, pass orderNumber
+                orderNumber = existingOrder.orderNumber;
+            }
+        }
+
+        if (!savedOrder) {
+            orderNumber = await generateOrderNumber();
+            const newOrder = new Order({
+                products: orderProducts,
+                orderNumber,
+                totalAmount: finalTotal,
+                customerName,
+                customerPhone,
+                customerAddress,
+                bkashNumber: paymentMethod === 'cod' ? '' : bkashNumber,
+                transactionId: paymentMethod === 'cod' ? '' : transactionId,
+                couponCode,
+                discountAmount,
+                paymentMethod,
+                shippingZone,
+                shippingCost,
+                status: 'pending'
+            });
+            savedOrder = await newOrder.save();
+        }
 
         // Send Discord Webhook Notification
         const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
         if (webhookUrl) {
             try {
                 const productList = orderProducts
-                    .map(p => `Prodcut name : ${p.name}\nQty: ${p.quantity} | Unit Price: ৳${Number(p.price).toLocaleString()}`)
+                    .map(p => `Product name : ${p.name}\nQty: ${p.quantity} | Unit Price: ৳${Number(p.price).toLocaleString()}`)
                     .join('\n');
 
                 let discountLine = '';
@@ -144,6 +186,18 @@ ${paymentMethod === 'cod' ? '🏠 Cash on Delivery (COD)' : `📱 ${(paymentMeth
             } catch (webhookError) {
                 console.error('Discord Webhook Failed:', webhookError);
                 // Do not fail the order if webhook fails
+            }
+        }
+
+        // Increment coupon usage if coupon was applied
+        if (couponCode) {
+            try {
+                await Coupon.findOneAndUpdate(
+                    { code: couponCode.toUpperCase() },
+                    { $inc: { usedCount: 1 } }
+                );
+            } catch (couponErr) {
+                console.error('Failed to increment coupon usage:', couponErr);
             }
         }
 

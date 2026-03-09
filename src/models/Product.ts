@@ -25,6 +25,10 @@ const productSchema = new mongoose.Schema({
         type: [String],
         required: true
     },
+    videoUrl: {
+        type: String,
+        default: ""
+    },
     category: {
         type: String,
         default: 'General'
@@ -42,6 +46,12 @@ const productSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+// @database-optimizer: Add indexes for common query patterns
+productSchema.index({ category: 1, createdAt: -1 }); // Category filter + sort by newest
+productSchema.index({ name: 'text', description: 'text' }); // Full-text search
+productSchema.index({ createdAt: -1 }); // Sort by newest (homepage)
+productSchema.index({ stock: 1 }); // Filter in-stock products
 
 // Avoid OverwriteModelError during Next.js hot reloads
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema);

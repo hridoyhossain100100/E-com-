@@ -12,13 +12,37 @@ cloudinary.config({
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
         await connectToDatabase();
 
-        // Fetch products, sorted by newest first
-        const products = await Product.find().sort({ createdAt: -1 });
+        const { searchParams } = new URL(req.url);
+        const page = parseInt(searchParams.get('page') || '0');
+        const limit = parseInt(searchParams.get('limit') || '0');
+        const category = searchParams.get('category');
 
+        let query: any = {};
+        if (category && category !== 'All') {
+            query.category = category;
+        }
+
+        // If pagination params provided, use pagination; otherwise return all (backward compatible)
+        if (page > 0 && limit > 0) {
+            const skip = (page - 1) * limit;
+            const [products, total] = await Promise.all([
+                Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+                Product.countDocuments(query)
+            ]);
+            return NextResponse.json({
+                products,
+                total,
+                totalPages: Math.ceil(total / limit),
+                currentPage: page
+            });
+        }
+
+        // Default: return all products (backward compatible for homepage)
+        const products = await Product.find(query).sort({ createdAt: -1 });
         return NextResponse.json(products);
     } catch (error) {
         console.error('Failed to fetch products:', error);
@@ -52,11 +76,47 @@ export async function POST(req: Request) {
         const category = formData.get('category') as string;
         const stock = formData.get('stock') as string;
         const variants = formData.get('variants') as string;
+        const videoUrl = formData.get('videoUrl') as string;
+
+        // @security-audit [xss-html-injection]: Input validation & sanitization
+        if (!name || name.trim().length < 2 || name.length > 200) {
+            return NextResponse.json({ message: 'Product name must be 2-200 characters' }, { status: 400 });
+        }
+        if (!price || isNaN(parseFloat(price)) || parseFloat(price) < 0 || parseFloat(price) > 10000000) {
+            return NextResponse.json({ message: 'Invalid price (0 - 10,000,000)' }, { status: 400 });
+        }
+        if (!description || description.trim().length < 5 || description.length > 5000) {
+            return NextResponse.json({ message: 'Description must be 5-5000 characters' }, { status: 400 });
+        }
+        if (category && category.length > 100) {
+            return NextResponse.json({ message: 'Category name too long' }, { status: 400 });
+        }
+        if (stock && (isNaN(parseInt(stock)) || parseInt(stock) < 0 || parseInt(stock) > 1000000)) {
+            return NextResponse.json({ message: 'Invalid stock value' }, { status: 400 });
+        }
 
         const images = formData.getAll('images') as File[];
 
         if (!images || images.length === 0) {
             return NextResponse.json({ message: 'At least one image is required' }, { status: 400 });
+        }
+
+        // @security-audit [file-uploads]: Validate file types and sizes
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+        const MAX_FILES = 10;
+
+        if (images.length > MAX_FILES) {
+            return NextResponse.json({ message: `Maximum ${MAX_FILES} images allowed` }, { status: 400 });
+        }
+
+        for (const file of images) {
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                return NextResponse.json({ message: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WebP, AVIF` }, { status: 400 });
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                return NextResponse.json({ message: `File too large: ${file.name}. Max 5MB per image` }, { status: 400 });
+            }
         }
 
         // Upload images to Cloudinary
@@ -89,6 +149,7 @@ export async function POST(req: Request) {
             price: parseFloat(price),
             description,
             imageUrls,
+            videoUrl: videoUrl || "",
             category: category || 'General',
             stock: parseInt(stock) || 0,
             variants: variants ? JSON.parse(variants) : []
@@ -99,8 +160,9 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('Failed to create product:', error);
+        // @security-audit [sensitive-data-exposure]: Don't leak internal error details in production
         return NextResponse.json(
-            { message: 'Internal Server Error', error: error?.message },
+            { message: 'Failed to create product' },
             { status: 500 }
         );
     }

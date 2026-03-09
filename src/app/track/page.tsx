@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { Search, Package, MapPin, Truck, CheckCircle, PackageOpen, Loader2 } from "lucide-react";
-import Link from "next/link";
-import Head from "next/head";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { Search, Truck, CheckCircle, PackageOpen, Loader2 } from "lucide-react";
 
 const STATUS_STEPS = ["pending", "confirmed", "shipped", "delivered"];
 
@@ -25,7 +21,7 @@ export default function TrackOrderPage() {
         setOrders(null);
 
         try {
-            const res = await axios.get(`${API}/api/orders/track?query=${encodeURIComponent(query.trim())}`);
+            const res = await axios.get(`/api/orders/track?query=${encodeURIComponent(query.trim())}`);
             setOrders(res.data);
         } catch (err: any) {
             setError(err.response?.data?.message || "Something went wrong.");
@@ -38,7 +34,6 @@ export default function TrackOrderPage() {
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-            <Head><title>Track Order — ShopVibe</title></Head>
 
             <div className="max-w-3xl mx-auto space-y-8">
                 {/* Search Box */}

@@ -8,6 +8,11 @@ const reviewSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// @database-optimizer: Indexes for product review queries
+reviewSchema.index({ productId: 1, createdAt: -1 }); // Product reviews sorted by newest
+reviewSchema.index({ productId: 1, rating: -1 }); // Product reviews sorted by rating
+reviewSchema.index({ createdAt: -1 }); // Admin review listing
+
 const Review = mongoose.models.Review || mongoose.model('Review', reviewSchema);
 
 export default Review;

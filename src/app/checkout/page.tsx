@@ -12,7 +12,7 @@ interface Product {
     name: string;
     price: number;
     description: string;
-    imageUrl: string;
+    imageUrls: string[];
 }
 
 function CheckoutForm() {
@@ -39,7 +39,7 @@ function CheckoutForm() {
     const [couponError, setCouponError] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("bkash");
     const [shippingZone, setShippingZone] = useState("dhaka");
-    const [shippingCost, setShippingCost] = useState(60);
+    const [shippingCost, setShippingCost] = useState(0);
     const [shippingZones, setShippingZones] = useState([{ id: "dhaka", label: "ঢাকার ভেতরে", cost: 60 }, { id: "outside", label: "ঢাকার বাইরে", cost: 120 }]);
     const [selectedCity, setSelectedCity] = useState("");
     const [orderType, setOrderType] = useState<"cod" | "pay">("cod");
@@ -59,11 +59,13 @@ function CheckoutForm() {
 
     useEffect(() => {
         fetchProducts();
+        axios.get(`/api/settings`).then(res => {
+        }).catch(() => { });
+
         axios.get(`/api/shipping`).then(r => {
             if (r.data.zones?.length) {
                 setShippingZones(r.data.zones);
                 setShippingZone(r.data.zones[0].id);
-                setShippingCost(r.data.zones[0].cost);
             }
             if (r.data.showDeliveryZone !== undefined) setShowDeliveryZone(r.data.showDeliveryZone);
         }).catch(() => { });
@@ -110,7 +112,7 @@ function CheckoutForm() {
         } else {
             setSelectedProducts([
                 ...selectedProducts,
-                { productId: product._id, name: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrl },
+                { productId: product._id, name: product.name, price: product.price, quantity: 1, imageUrl: product.imageUrls?.[0] || "" },
             ]);
         }
     };
@@ -137,7 +139,7 @@ function CheckoutForm() {
         discountAmount = Math.round(subtotal * couponApplied.discountPercent / 100);
         if (couponApplied.maxDiscount > 0 && discountAmount > couponApplied.maxDiscount) discountAmount = couponApplied.maxDiscount;
     }
-    const totalAmount = subtotal - discountAmount + shippingCost;
+    const totalAmount = subtotal - discountAmount;
 
     const applyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -181,7 +183,7 @@ function CheckoutForm() {
                 transactionId: orderType === "pay" ? transactionId : "",
                 couponCode: couponApplied?.code || null,
                 discountAmount: discountAmount || 0,
-                paymentMethod: orderType === "cod" ? "cod" : paymentMethod,
+                paymentMethod: "cod",
                 shippingZone,
                 shippingCost,
             });
@@ -243,27 +245,27 @@ function CheckoutForm() {
                             {/* Name & Phone */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-400 ml-1">Full Name</label>
+                                    <label htmlFor="customerName" className="text-sm font-medium text-[var(--text-muted)] ml-1">Full Name</label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-black/40 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-white outline-none transition-all placeholder:text-gray-600" required />
+                                        <input id="customerName" type="text" autoComplete="name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all placeholder:text-[var(--input-placeholder)]" required />
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-400 ml-1">Phone Number</label>
+                                    <label htmlFor="customerPhone" className="text-sm font-medium text-[var(--text-muted)] ml-1">Phone Number</label>
                                     <div className="relative">
                                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-black/40 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-white outline-none transition-all placeholder:text-gray-600" required />
+                                        <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all placeholder:text-[var(--input-placeholder)]" required />
                                     </div>
                                 </div>
                             </div>
 
                             {/* City / District */}
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-gray-400 ml-1">City / District</label>
+                                <label htmlFor="selectedCity" className="text-sm font-medium text-[var(--text-muted)] ml-1">City / District</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-black/40 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-white outline-none transition-all appearance-none cursor-pointer" required>
+                                    <select id="selectedCity" value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 pl-10 text-[var(--input-text)] outline-none transition-all appearance-none cursor-pointer" required>
                                         <option value="" disabled>Select your district...</option>
                                         {bdCities.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
@@ -273,88 +275,21 @@ function CheckoutForm() {
 
                             {/* Address */}
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-gray-400 ml-1">Detailed Address (House/Road/Area)</label>
-                                <textarea value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="e.g. House 12, Road 4, Block C, Banani" className="w-full bg-black/40 border border-gray-800 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 text-white outline-none transition-all placeholder:text-gray-600 resize-none" rows={3} required />
+                                <label htmlFor="customerAddress" className="text-sm font-medium text-[var(--text-muted)] ml-1">Detailed Address (House/Road/Area)</label>
+                                <textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="e.g. House 12, Road 4, Block C, Banani" className="w-full bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl px-4 py-3 text-[var(--input-text)] outline-none transition-all placeholder:text-[var(--input-placeholder)] resize-none" rows={3} required />
                             </div>
 
-                            {/* Delivery Zone - at bottom, conditionally rendered */}
-                            {showDeliveryZone && shippingZones.length > 0 && (
-                                <div className="pt-5 border-t border-gray-800 space-y-3">
-                                    <label className="text-sm font-medium text-gray-400 ml-1 flex items-center gap-2"><Truck className="w-4 h-4 text-sky-400" /> Select Delivery Zone</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {shippingZones.map(z => (
-                                            <button key={z.id} type="button" onClick={() => { setShippingZone(z.id); setShippingCost(z.cost); }}
-                                                className={`relative flex items-center justify-between p-4 rounded-xl border transition-all overflow-hidden ${shippingZone === z.id ? "border-sky-500 bg-sky-500/10 ring-1 ring-sky-500/50" : "border-gray-800 bg-black/40 hover:border-gray-600"}`}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${shippingZone === z.id ? "border-sky-500" : "border-gray-600"}`}>
-                                                        {shippingZone === z.id && <div className="w-2 h-2 bg-sky-500 rounded-full"></div>}
-                                                    </div>
-                                                    <span className={`font-medium ${shippingZone === z.id ? "text-white" : "text-gray-400"}`}>{z.label}</span>
-                                                </div>
-                                                <span className="text-sky-400 font-semibold bg-sky-500/10 px-2 py-1 rounded-md">৳{z.cost}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                            {/* Free Home Delivery Notice */}
+                            <div className="pt-5 border-t border-gray-800">
+                                <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                    <Truck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                                    <span className="text-sm font-medium text-emerald-300">🚚 Free Home Delivery on all orders!</span>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </section>
 
-                    {/* Step 2: Payment Method */}
-                    <section className="glass-card p-6 lg:p-8 relative overflow-hidden" style={{ transform: "none" }}>
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-pink-500"></div>
-                        <div className="flex items-center gap-4 mb-6">
-                            <span className="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-pink-500/30">2</span>
-                            <h2 className="text-xl font-semibold text-white">Payment Method</h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                            <button type="button" onClick={() => setOrderType("cod")}
-                                className={`flex flex-col items-start p-5 rounded-xl border transition-all text-left ${orderType === "cod" ? "border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500/50" : "border-gray-800 bg-black/40 hover:border-gray-600"}`}>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className={`p-2 rounded-lg ${orderType === "cod" ? "bg-emerald-500/20 text-emerald-400" : "bg-gray-800 text-gray-400"}`}>
-                                        <Truck className="w-5 h-5" />
-                                    </div>
-                                    <span className={`font-semibold text-lg ${orderType === "cod" ? "text-emerald-400" : "text-gray-300"}`}>Cash on Delivery</span>
-                                </div>
-                                <span className="text-sm text-gray-500 mt-1">Pay with cash upon receiving your order.</span>
-                            </button>
-
-                            <button type="button" onClick={() => setOrderType("pay")}
-                                className={`flex flex-col items-start p-5 rounded-xl border transition-all text-left ${orderType === "pay" ? "border-pink-500 bg-pink-500/10 ring-1 ring-pink-500/50" : "border-gray-800 bg-black/40 hover:border-gray-600"}`}>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className={`p-2 rounded-lg ${orderType === "pay" ? "bg-pink-500/20 text-pink-400" : "bg-gray-800 text-gray-400"}`}>
-                                        <CreditCard className="w-5 h-5" />
-                                    </div>
-                                    <span className={`font-semibold text-lg ${orderType === "pay" ? "text-pink-400" : "text-gray-300"}`}>Digital Payment</span>
-                                </div>
-                                <span className="text-sm text-gray-500 mt-1">Pay instantly via mobile banking securely.</span>
-                            </button>
-                        </div>
-
-                        {orderType === "pay" && (
-                            <div className="p-5 rounded-xl bg-black/40 border border-gray-800 space-y-5 animate-in fade-in slide-in-from-top-2">
-                                <div className="flex gap-2">
-                                    {[{ id: "bkash", label: "Bkash", color: "text-pink-500 border-pink-500/50 bg-pink-500/10 ring-1 ring-pink-500/50" }, { id: "nagad", label: "Nagad", color: "text-orange-500 border-orange-500/50 bg-orange-500/10 ring-1 ring-orange-500/50" }, { id: "rocket", label: "Rocket", color: "text-purple-500 border-purple-500/50 bg-purple-500/10 ring-1 ring-purple-500/50" }].map(m => (
-                                        <button key={m.id} type="button" onClick={() => setPaymentMethod(m.id)}
-                                            className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${paymentMethod === m.id ? m.color : "border-gray-800 text-gray-500 bg-transparent hover:border-gray-600"}`}>
-                                            {m.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-400 ml-1">{paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)} Sender Number</label>
-                                        <input type="tel" value={bkashNumber} onChange={(e) => setBkashNumber(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-black/60 border border-gray-700 focus:border-pink-500 rounded-xl px-4 py-3 text-white outline-none transition-all placeholder:text-gray-600" required />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-400 ml-1">Transaction ID</label>
-                                        <input type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} placeholder="TRXXXXXX" className="w-full bg-black/60 border border-gray-700 focus:border-pink-500 rounded-xl px-4 py-3 text-white outline-none transition-all placeholder:text-gray-600" required />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </section>
+                    {/* Payment Methods Removed */}
                 </div>
 
                 {/* RIGHT COLUMN: Sticky Order Summary & Quick Add */}
@@ -393,9 +328,9 @@ function CheckoutForm() {
 
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-1 bg-black/40 border border-gray-800 rounded-md p-1 w-fit">
-                                                        <button type="button" onClick={() => updateQuantity(p.productId, -1)} className="p-1 hover:text-white text-gray-400 transition-colors"><Minus className="w-3 h-3" /></button>
-                                                        <span className="text-xs font-medium w-4 text-center">{p.quantity}</span>
-                                                        <button type="button" onClick={() => updateQuantity(p.productId, 1)} className="p-1 hover:text-white text-gray-400 transition-colors"><Plus className="w-3 h-3" /></button>
+                                                        <button type="button" onClick={() => updateQuantity(p.productId, -1)} aria-label="Decrease quantity" className="p-2 hover:text-white text-gray-400 transition-colors"><Minus className="w-3.5 h-3.5" /></button>
+                                                        <span className="text-xs font-medium w-6 text-center">{p.quantity}</span>
+                                                        <button type="button" onClick={() => updateQuantity(p.productId, 1)} aria-label="Increase quantity" className="p-2 hover:text-white text-gray-400 transition-colors"><Plus className="w-3.5 h-3.5" /></button>
                                                     </div>
                                                     <button type="button" onClick={() => removeProduct(p.productId)} className="text-gray-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-500/10 transition-colors">
                                                         <Trash2 className="w-4 h-4" />
@@ -433,8 +368,8 @@ function CheckoutForm() {
                                     <span className="text-white font-medium">৳{subtotal.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-400">
-                                    <span>Shipping <span className="text-xs ml-1">({shippingZones.find(z => z.id === shippingZone)?.label})</span></span>
-                                    <span className="text-white font-medium">৳{shippingCost.toLocaleString()}</span>
+                                    <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-emerald-400" /> Free Home Delivery</span>
+                                    <span className="text-emerald-400 font-medium">FREE</span>
                                 </div>
                                 {discountAmount > 0 && (
                                     <div className="flex justify-between text-sm text-emerald-400 font-medium">
@@ -463,7 +398,7 @@ function CheckoutForm() {
                                     {loading ? (
                                         <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
                                     ) : (
-                                        <>Complete Purchase <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>
+                                        <>Confirm Order <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>
                                     )}
                                 </div>
                             </button>
@@ -480,7 +415,7 @@ function CheckoutForm() {
                                     {availableProducts.map(p => (
                                         <div key={p._id} className="flex items-center justify-between p-2 rounded-lg bg-black/30 hover:bg-black/50 transition-colors">
                                             <div className="flex items-center gap-3 min-w-0 pr-2">
-                                                {p.imageUrl && <Image src={p.imageUrl} width={40} height={40} className="rounded border border-gray-800 object-cover flex-shrink-0" alt="" />}
+                                                {p.imageUrls?.[0] && <Image src={p.imageUrls[0]} width={40} height={40} className="rounded border border-gray-800 object-cover flex-shrink-0" alt={p.name} />}
                                                 <div className="min-w-0">
                                                     <h4 className="text-xs font-medium text-gray-200 truncate">{p.name}</h4>
                                                     <p className="text-xs text-gray-500 font-semibold">৳{p.price.toLocaleString()}</p>
