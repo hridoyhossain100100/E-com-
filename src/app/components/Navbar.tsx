@@ -13,9 +13,10 @@ export default function Navbar({ initialSettings }: { initialSettings?: any }) {
     const [branding, setBranding] = useState<{ storeName: string; storeInitial: string; logoUrl: string } | null>(initialSettings?.storeBranding || null);
 
     useEffect(() => {
-        const saved = localStorage.getItem("theme");
-        if (saved === "light") { setDark(false); document.documentElement.classList.remove("dark"); }
-        else { setDark(true); document.documentElement.classList.add("dark"); }
+        // Theme initialization
+        const isDark = document.documentElement.classList.contains("dark");
+        setDark(isDark);
+
         // Wishlist count
         const wl = JSON.parse(localStorage.getItem("wishlist") || "[]");
         setWishCount(wl.length);
@@ -31,9 +32,15 @@ export default function Navbar({ initialSettings }: { initialSettings?: any }) {
     }, []);
 
     const toggleTheme = () => {
-        if (dark) { document.documentElement.classList.remove("dark"); localStorage.setItem("theme", "light"); }
-        else { document.documentElement.classList.add("dark"); localStorage.setItem("theme", "dark"); }
-        setDark(!dark);
+        const newDark = !dark;
+        if (newDark) {
+            document.documentElement.classList.add("dark");
+            localStorage.setItem("theme", "dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+            localStorage.setItem("theme", "light");
+        }
+        setDark(newDark);
     };
 
     return (

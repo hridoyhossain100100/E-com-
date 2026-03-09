@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { VWOScript } from 'vwo-smartcode-nextjs';
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import MarketingScripts, { GTMNoScript } from "./components/MarketingScripts";
@@ -89,15 +88,26 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <VWOScript accountId="1203603" />
         {/* @seo-fundamentals: Preconnect to external origins for faster loading */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              const saved = localStorage.getItem('theme');
+              if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+            })()
+          `
+        }} />
         <MarketingScripts />
       </head>
-      <body className={`${inter.className} antialiased min-h-screen bg-gray-950 text-white dark:bg-gray-950 dark:text-white`} suppressHydrationWarning>
+      <body className={`${inter.className} antialiased min-h-screen bg-[var(--background)] text-[var(--foreground)]`} suppressHydrationWarning>
         <GTMNoScript />
         <LiveVisitorTracker />
         <Navbar initialSettings={await getSettings()} />

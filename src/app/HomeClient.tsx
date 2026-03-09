@@ -68,25 +68,25 @@ function ProductCard({ product: p, isWishlisted, onWishlist, onShare, onAddToCar
       <div className="p-4 sm:p-5 flex flex-col min-h-[140px] flex-1 justify-between">
         <div>
           <Link href={`/product/${p._id}`}>
-            <h3 className="font-semibold text-sm sm:text-base mb-1 truncate hover:text-violet-400 transition-colors">{p.name}</h3>
+            <h3 className="font-semibold text-sm sm:text-base mb-1 truncate hover:text-primary transition-colors">{p.name}</h3>
           </Link>
-          <p className="text-xs text-gray-500 mb-3 line-clamp-2">{p.description}</p>
+          <p className="text-xs text-[var(--text-muted)] mb-3 line-clamp-2">{p.description}</p>
         </div>
         <div className="flex flex-col gap-3 mt-auto">
           <span className="text-violet-400 font-bold text-lg leading-none">৳{p.price.toLocaleString()}</span>
           <div className="flex gap-2">
             {(p.stock || 0) > 0 ? (
               <>
-                <button onClick={(e) => { e.preventDefault(); onAddToCart(p); }} className="flex-1 px-3 py-2 bg-transparent border border-[#8B5CF6] text-[#8B5CF6] hover:bg-[#8B5CF6]/10 rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center">
+                <button onClick={(e) => { e.preventDefault(); onAddToCart(p); }} className="flex-1 px-3 py-2 bg-transparent border border-primary text-primary hover:bg-primary/10 rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center">
                   Add to Cart
                 </button>
                 <Link href={`/checkout?product=${p._id}&name=${encodeURIComponent(p.name)}&price=${p.price}`}
-                  className="flex-1 px-3 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center shadow-md shadow-violet-500/20">
+                  className="flex-1 px-3 py-2 bg-primary hover:bg-primary/90 text-white rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center shadow-md shadow-primary/20">
                   Buy Now
                 </Link>
               </>
             ) : (
-              <span className="w-full text-center px-3 py-1.5 bg-gray-800 rounded-lg text-xs font-medium text-gray-500">Sold Out</span>
+              <span className="w-full text-center px-3 py-1.5 bg-[var(--border-dim)]/50 rounded-lg text-xs font-medium text-[var(--text-muted)]">Sold Out</span>
             )}
           </div>
         </div>
@@ -166,8 +166,8 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
         {/* Banner */}
         {banner?.enabled && banner.text && (
           <div className="mb-8 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-violet-600/20 via-fuchsia-500/20 to-pink-500/20 border border-violet-500/20 text-center relative animate-fade-in-up">
-            <p className="text-sm sm:text-base text-gray-200 font-medium">{banner.text}</p>
-            <button onClick={() => setBanner({ ...banner, enabled: false })} className="absolute top-2 right-3 p-1 rounded-full hover:bg-white/10 text-gray-400 hover:text-white"><X className="w-3.5 h-3.5" /></button>
+            <p className="text-sm sm:text-base text-[var(--foreground)] font-medium">{banner.text}</p>
+            <button onClick={() => setBanner({ ...banner, enabled: false })} className="absolute top-2 right-3 p-1 rounded-full hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--foreground)]"><X className="w-3.5 h-3.5" /></button>
           </div>
         )}
 
@@ -188,17 +188,17 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4 tracking-tight">
               <span className="gradient-text">{hero.title || 'Discover Quality'}</span>
-              <br /><span className="text-white">{hero.titleHighlight || 'Products'}</span>
+              <br /><span className="text-[var(--foreground)]">{hero.titleHighlight || 'Products'}</span>
             </h1>
-            <p className="text-gray-400 text-base sm:text-lg max-w-xl mx-auto mb-8">
+            <p className="text-[var(--text-muted)] text-base sm:text-lg max-w-xl mx-auto mb-8">
               {hero.description || 'Curated collection of premium products. Shop with confidence. Enjoy Cash on Delivery.'}
             </p>
             {/* Search Bar */}
             <div className="max-w-lg mx-auto relative mt-8">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search products..."
-                className="w-full pl-12 pr-4 py-3.5 text-base bg-slate-800/80 border border-slate-600 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent backdrop-blur-md transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+                className="w-full pl-12 pr-4 py-3.5 text-base bg-[var(--bg-card)]/80 border border-[var(--border-dim)] rounded-2xl text-[var(--foreground)] placeholder-[var(--text-dim)] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary focus:border-transparent backdrop-blur-md transition-all shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
               />
             </div>
           </div>
@@ -211,8 +211,8 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
           {categories.map(c => (
             <button key={c} onClick={() => setCategory(c)}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${category === c
-                ? "bg-violet-600/30 text-violet-600 dark:text-violet-300 border border-violet-500/30"
-                : "bg-[var(--card-bg)] text-[var(--text-muted)] border border-[var(--card-border)] hover:bg-[var(--glass-hover)]"}`}>
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-dim)] hover:bg-[var(--glass-hover)]"}`}>
               {c}
             </button>
           ))}
@@ -253,8 +253,8 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
           </div>
         ) : filtered.length === 0 ? (
           <div className="glass-card p-16 text-center" style={{ transform: "none" }}>
-            <Search className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-            <p className="text-gray-500">No products found.</p>
+            <Search className="w-12 h-12 text-[var(--border-dim)] mx-auto mb-3" />
+            <p className="text-[var(--text-muted)]">No products found.</p>
           </div>
         ) : (
           <div className={`grid gap-4 sm:gap-6 ${filtered.length === 1 ? "grid-cols-1 max-w-md mx-auto" : "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`}>
@@ -274,7 +274,7 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
       </div>
 
       {/* ═══ PREMIUM FOOTER ═══ */}
-      <footer className="border-t border-gray-800/50 mt-16">
+      <footer className="border-t border-[var(--border-dim)] mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
             {/* Brand */}
@@ -314,11 +314,11 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
               <h4 className="font-semibold text-sm text-[var(--foreground)] mb-4 uppercase tracking-wider">Contact</h4>
               <ul className="space-y-2.5">
                 <li className="flex gap-3 text-sm text-[var(--text-muted)]">
-                  <MapPin className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                   <span>{contact.address || '123 Commerce Avenue, Dhaka, Bangladesh'}</span>
                 </li>
-                <li className="flex items-center gap-2 text-sm text-[var(--text-muted)]"><Phone className="w-4 h-4 text-gray-600" />{contact.phone || '+880 1XXXXXXXXX'}</li>
-                <li className="flex items-center gap-2 text-sm text-[var(--text-muted)]"><Mail className="w-4 h-4 text-gray-600" />{contact.email || 'support@shopvibe.com'}</li>
+                <li className="flex items-center gap-2 text-sm text-[var(--text-muted)]"><Phone className="w-4 h-4 text-[var(--text-dim)]" />{contact.phone || '+880 1XXXXXXXXX'}</li>
+                <li className="flex items-center gap-2 text-sm text-[var(--text-muted)]"><Mail className="w-4 h-4 text-[var(--text-dim)]" />{contact.email || 'support@shopvibe.com'}</li>
               </ul>
             </div>
 
@@ -327,19 +327,19 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
               <h4 className="font-semibold text-sm text-[var(--foreground)] mb-4 uppercase tracking-wider">We Accept</h4>
               <div className="flex flex-wrap gap-2">
                 {(footer.paymentMethods || ["Cash on Delivery"]).map((m: string) => (
-                  <span key={m} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-medium text-gray-400">{m}</span>
+                  <span key={m} className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-lg text-xs font-medium text-[var(--text-muted)]">{m}</span>
                 ))}
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs text-gray-500">SSL Secured Payments</span>
+                <span className="text-xs text-[var(--text-dim)]">SSL Secured Payments</span>
               </div>
             </div>
           </div>
 
           {/* Copyright */}
-          <div className="border-t border-gray-800/50 mt-10 pt-8 text-center">
-            <p className="text-xs text-gray-600">{(footer.copyrightText || `© {year} ${storeName}. All rights reserved. Made with 💜 in Bangladesh`).replace('{year}', String(new Date().getFullYear()))}</p>
+          <div className="border-t border-[var(--border-dim)] mt-10 pt-8 text-center">
+            <p className="text-xs text-[var(--text-dim)]">{(footer.copyrightText || `© {year} ${storeName}. All rights reserved. Made with 💜 in Bangladesh`).replace('{year}', String(new Date().getFullYear()))}</p>
           </div>
         </div>
       </footer>

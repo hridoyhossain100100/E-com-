@@ -4,12 +4,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
     Upload, Package, Trash2, CheckCircle, AlertCircle, ImagePlus, Loader2,
-    Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X, Copy,
-    DollarSign, TrendingUp, Box, ChevronDown, Download, Tag, Bell,
-    ChevronLeft, ChevronRight, ArrowUpDown, Plus, GripVertical, Printer, Settings, Star, Users,
+    Lock, LogOut, BarChart3, ShoppingCart, Search, Edit3, X,
+    DollarSign, TrendingUp, ChevronDown, Download, Tag, Bell,
+    Plus, Printer, Settings, Star, Users,
     Send, Truck, MapPin, PackageCheck, RefreshCw, CreditCard,
     Store, Globe, Phone, Mail, Facebook, Instagram, Youtube, MessageCircle,
-    Type, FileText, Palette, Eye, PieChart, Repeat, Target, Layout
+    FileText, Palette, Layout
 } from "lucide-react";
 import Image from "next/image";
 import { sendOrderToPathao } from '@/app/actions/pathaoIntegration';
@@ -28,7 +28,7 @@ interface Coupon { _id: string; code: string; discountPercent: number; maxDiscou
 
 axios.defaults.withCredentials = true;
 
-type TabType = "overview" | "products" | "orders" | "coupons" | "settings" | "reviews" | "oms";
+type TabType = "overview" | "products" | "orders" | "coupons" | "settings" | "reviews" | "oms" | "customers";
 
 // ─── Pathao Timeline Steps ───
 const TIMELINE_STEPS = [
@@ -44,11 +44,11 @@ function getTimelineIndex(pathaoStatus?: string): number {
     return idx >= 0 ? idx : 0;
 }
 const STATUS_COLORS: Record<string, string> = {
-    incomplete: "text-gray-400 bg-gray-400/10 border-gray-400/20",
-    pending: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-    confirmed: "text-blue-400 bg-blue-400/10 border-blue-400/20",
-    shipped: "text-violet-400 bg-violet-400/10 border-violet-400/20",
-    delivered: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20"
+    incomplete: "text-[var(--text-dim)] bg-[var(--border-dim)]/20 border-[var(--border-dim)]/30",
+    pending: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+    confirmed: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+    shipped: "text-violet-500 bg-violet-500/10 border-violet-500/20",
+    delivered: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
 };
 
 // ─── Mini Chart Component (SVG) ───
@@ -56,25 +56,38 @@ function RevenueChart({ data }: { data: DailyData[] }) {
     if (!data.length) return null;
     const max = Math.max(...data.map(d => d.revenue), 1);
     const w = 700, h = 200, pad = 30;
-    const barW = (w - pad * 2) / data.length - 4;
+    const barW = (w - pad * 2) / data.length - 8;
     return (
-        <div className="glass-card p-6 border border-white/5" style={{ transform: "none" }}>
-            <h3 className="text-sm font-medium text-gray-400 mb-4">Revenue — Last 14 Days</h3>
-            <svg viewBox={`0 0 ${w} ${h + 30}`} className="w-full" preserveAspectRatio="xMidYMid meet">
-                {data.map((d, i) => {
-                    const barH = (d.revenue / max) * (h - pad);
-                    const x = pad + i * ((w - pad * 2) / data.length) + 2;
-                    const y = h - barH;
-                    return (
-                        <g key={i}>
-                            <rect x={x} y={y} width={barW} height={barH} rx={4} fill="url(#barGrad)" opacity={0.85} />
-                            <text x={x + barW / 2} y={h + 16} textAnchor="middle" className="fill-gray-500" fontSize="9">{d.label}</text>
-                            {d.revenue > 0 && <text x={x + barW / 2} y={y - 4} textAnchor="middle" className="fill-gray-300" fontSize="9">৳{(d.revenue / 1000).toFixed(1)}k</text>}
-                        </g>
-                    );
-                })}
-                <defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" /><stop offset="100%" stopColor="#6d28d9" /></linearGradient></defs>
-            </svg>
+        <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm w-full h-full flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-base font-bold text-[var(--foreground)]">Performance</h3>
+                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)]">
+                    <span className="cursor-pointer hover:text-[var(--foreground)]">ALL</span>
+                    <span className="cursor-pointer hover:text-[var(--foreground)]">1M</span>
+                    <span className="bg-[var(--background)] px-2 py-1 rounded text-[var(--foreground)]">6M</span>
+                    <span className="cursor-pointer hover:text-[var(--foreground)]">1Y</span>
+                </div>
+            </div>
+            <div className="flex-1 min-h-[250px] w-full">
+                <svg viewBox={`0 0 ${w} ${h + 40}`} className="w-full h-full" preserveAspectRatio="none">
+                    {data.map((d, i) => {
+                        const barH = (d.revenue / max) * (h - pad);
+                        const x = pad + i * ((w - pad * 2) / data.length) + 4;
+                        const y = h - barH;
+                        return (
+                            <g key={i}>
+                                <rect x={x} y={y} width={barW} height={barH} rx={4} fill="var(--primary)" opacity={0.9} />
+                                <text x={x + barW / 2} y={h + 16} textAnchor="middle" className="fill-[var(--text-dim)] font-medium" style={{ fill: 'var(--text-dim)' }} fontSize="11">{d.label ? d.label.substring(0, 3) : d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('en', { weekday: 'short' }) : ''}</text>
+                                {d.revenue > 0 && <text x={x + barW / 2} y={y - 8} textAnchor="middle" className="fill-[var(--text-muted)] font-semibold" style={{ fill: 'var(--text-muted)' }} fontSize="10">{(d.revenue / 1000).toFixed(0)}k</text>}
+                            </g>
+                        );
+                    })}
+                </svg>
+            </div>
+            <div className="flex justify-center gap-6 mt-4">
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]"><div className="w-2 h-2 rounded-full bg-primary" style={{ backgroundColor: 'var(--primary)' }}></div>Revenue</div>
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]"><div className="w-2 h-2 rounded-full bg-emerald-400"></div>Orders</div>
+            </div>
         </div>
     );
 }
@@ -376,6 +389,34 @@ export default function AdminPage() {
         finally { setSLoading(false); }
     };
 
+    const saveAllSettings = async () => {
+        setSLoading(true);
+        try {
+            // Save each section
+            await axios.put(`/api/settings/shippingZones`, { value: sZones });
+            await axios.put(`/api/settings/categories`, { value: sCategories });
+            await axios.put(`/api/settings/banner`, { value: sBanner });
+            await axios.put(`/api/settings/marquee`, { value: sMarquee });
+            await axios.put(`/api/settings/marketing`, { value: sMarketing });
+            await axios.put(`/api/settings/showDeliveryZone`, { value: sShowDeliveryZone });
+            await axios.put(`/api/settings/features`, { value: sFeatures });
+            await axios.put(`/api/settings/storeBranding`, { value: sBranding });
+            await axios.put(`/api/settings/contactInfo`, { value: sContact });
+            await axios.put(`/api/settings/socialLinks`, { value: sSocial });
+            await axios.put(`/api/settings/heroContent`, { value: sHero });
+            await axios.put(`/api/settings/footerContent`, { value: sFooter });
+            await axios.put(`/api/settings/seo`, { value: sSeo });
+            await axios.put(`/api/settings/appearance`, { value: sAppearance });
+
+            showToast('success', 'All settings saved successfully!');
+            fetchSettings();
+        } catch (err) {
+            showToast('error', 'Failed to save some settings');
+        } finally {
+            setSLoading(false);
+        }
+    };
+
     // ─── Invoice Print ───
     const printInvoice = (o: Order) => {
         const w = window.open('', '_blank', 'width=900,height=700');
@@ -488,7 +529,7 @@ export default function AdminPage() {
     // ─── Variant Renderer ───
     const VariantEditor = ({ variants, setVariants }: { variants: Variant[]; setVariants: (v: Variant[]) => void }) => (
         <div className="space-y-2">
-            <div className="flex items-center justify-between"><label className="text-sm text-gray-400">Variants</label>
+            <div className="flex items-center justify-between"><label className="text-sm text-[var(--text-dim)]/70">Variants</label>
                 <button type="button" onClick={() => addVariant(variants, setVariants)} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"><Plus className="w-3 h-3" />Add</button></div>
             {variants.map((v, i) => (
                 <div key={i} className="grid grid-cols-5 gap-2 items-center">
@@ -504,7 +545,7 @@ export default function AdminPage() {
     const DescriptionSectionEditor = ({ sections, setSections }: { sections: DescriptionSection[]; setSections: (s: DescriptionSection[]) => void }) => (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-400">Multiple Descriptions (Sections)</label>
+                <label className="text-sm font-medium text-[var(--text-dim)]/70">Multiple Descriptions (Sections)</label>
                 <button type="button" onClick={() => setSections([...sections, { title: "", content: "" }])} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1">
                     <Plus className="w-3 h-3" /> Add Section
                 </button>
@@ -522,924 +563,1123 @@ export default function AdminPage() {
     );
 
     // ─── AUTH SCREEN ───
-    if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>;
+    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[var(--background)]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
     if (!isAuth) return (
-        <div className="min-h-screen flex items-center justify-center px-4">
-            <div className="glass-card p-10 max-w-md w-full text-center border border-violet-500/20 shadow-2xl shadow-violet-500/10">
-                <div className="w-16 h-16 bg-violet-500/10 rounded-full flex items-center justify-center mx-auto mb-6"><Lock className="w-8 h-8 text-violet-400" /></div>
-                <h2 className="text-2xl font-bold text-white mb-2">Admin Access</h2>
-                <p className="text-gray-400 mb-8">Enter the master password to continue.</p>
+        <div className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)]">
+            <div className="bg-[var(--bg-card)] rounded-2xl p-10 max-w-md w-full text-center border border-[var(--border-dim)] shadow-sm">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6"><Lock className="w-8 h-8 text-primary" /></div>
+                <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2">Admin Access</h2>
+                <p className="text-[var(--text-muted)] mb-8">Enter the master password to continue.</p>
                 <form onSubmit={handleLogin} className="space-y-4">
-                    <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Enter password" className="input-field text-center tracking-widest font-mono" autoFocus />
-                    {authErr && <div className="text-sm text-red-400 bg-red-500/10 p-2 rounded-lg">{authErr}</div>}
-                    <button type="submit" disabled={loading || !pw} className="btn-primary w-full">{loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Unlock Dashboard"}</button>
+                    <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Enter password" className="w-full px-4 py-3 bg-[var(--background)] border border-[var(--border-dim)] rounded-xl text-[var(--foreground)] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-center tracking-widest font-mono transition-all" autoFocus />
+                    {authErr && <div className="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-2 rounded-lg">{authErr}</div>}
+                    <button type="submit" disabled={loading || !pw} className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-md shadow-primary/20">{loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Unlock Dashboard"}</button>
                 </form>
             </div>
         </div>
     );
 
     // ─── MAIN ───
+    const SIDEBAR_MENU = [
+        {
+            section: "GENERAL", items: [
+                { id: "overview" as TabType, label: "Dashboard", icon: BarChart3 },
+                { id: "products" as TabType, label: "Products", icon: Package },
+                { id: "orders" as TabType, label: "Orders", icon: ShoppingCart, badge: newOrderCount },
+                { id: "oms" as TabType, label: "OMS", icon: Truck },
+                { id: "customers" as TabType, label: "Customers", icon: Users },
+            ]
+        },
+        {
+            section: "OTHER", items: [
+                { id: "coupons" as TabType, label: "Coupons", icon: Tag },
+                { id: "reviews" as TabType, label: "Reviews", icon: Star },
+                { id: "settings" as TabType, label: "Settings", icon: Settings },
+            ]
+        }
+    ];
+
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--foreground)] font-sans">
             {/* Toast */}
             {toast && (
-                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-red-500/10 border-red-500/30 text-red-300"}`}>
-                    {toast.type === "success" ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}{toast.text}
-                    <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100"><X className="w-3 h-3" /></button>
+                <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border text-sm font-medium ${toast.type === "success" ? "bg-emerald-50 border border-emerald-200 text-emerald-600" : "bg-red-50 border border-red-200 text-red-600"}`}>
+                    {toast.type === "success" ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-red-500" />}{toast.text}
+                    <button onClick={() => setToast(null)} className="ml-2 text-[var(--text-dim)]/70 hover:text-[var(--text-muted)]"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                <div>
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
-                            <Package className="w-4 h-4 text-violet-400" /><span className="text-sm text-violet-300">Admin Panel</span>
-                        </div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20">
-                            <div className="relative flex items-center justify-center w-3 h-3">
-                                <span className="absolute inline-flex w-full h-full rounded-full bg-fuchsia-400 opacity-75 animate-ping"></span>
-                                <span className="relative inline-flex w-2 h-2 rounded-full bg-fuchsia-500"></span>
+            {/* Sidebar */}
+            <aside className="w-64 bg-[var(--bg-sidebar)] flex-shrink-0 h-full overflow-y-auto border-r border-[var(--border-dim)] flex flex-col custom-scrollbar">
+                <div className="p-6 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[#ff6b2c] rounded-lg flex items-center justify-center text-white font-bold"><ShoppingCart className="w-5 h-5" /></div>
+                    <span className="text-white text-xl font-bold tracking-tight">Larkon</span>
+                </div>
+
+                <div className="px-4 pb-6 space-y-6 flex-1">
+                    {SIDEBAR_MENU.map((group, idx) => (
+                        <div key={idx}>
+                            <h3 className="px-3 text-[10px] font-semibold text-[var(--text-dim)] uppercase tracking-widest mb-2">{group.section}</h3>
+                            <div className="space-y-1">
+                                {group.items.map(t => (
+                                    <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "orders") setNewOrderCount(0); }}
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative ${tab === t.id ? "bg-primary/10 text-primary dark:bg-[var(--bg-card)]/10 dark:text-white" : "text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--background)]/50"}`}>
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <t.icon className={`w-4 h-4 ${tab === t.id ? "text-primary" : "text-[var(--text-dim)] group-hover:text-[var(--text-muted)]"}`} />
+                                            {t.label}
+                                        </div>
+                                        {t.badge !== undefined && t.badge > 0 && <span className="w-5 h-5 bg-red-500 text-white text-[10px] rounded flex items-center justify-center font-bold animate-pulse relative z-10">{t.badge}</span>}
+                                        {tab === t.id && <div className="absolute left-[-1rem] w-1.5 h-8 bg-primary rounded-r-full" />}
+                                    </button>
+                                ))}
                             </div>
-                            <span className="text-sm font-medium text-fuchsia-300">
-                                <Users className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
+                        </div>
+                    ))}
+                </div>
+            </aside>
+
+            {/* Main Content Wrapper */}
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+                {/* Topbar */}
+                <header className="h-16 bg-[var(--bg-card)] border-b border-[var(--border-dim)] flex items-center justify-between px-6 flex-shrink-0 z-10">
+                    <div className="flex items-center gap-4 flex-1">
+                        <div className="relative w-64 max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                            <input type="text" placeholder="Search..." className="w-full pl-9 pr-4 py-2 bg-[var(--background)] border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-[var(--foreground)]" />
+                        </div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 hidden sm:flex">
+                            <div className="relative flex items-center justify-center w-2.5 h-2.5">
+                                <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                                <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500"></span>
+                            </div>
+                            <span className="text-xs font-semibold text-emerald-700">
                                 Live Visitors: {liveVisitors}
                             </span>
                         </div>
                     </div>
-                    <h1 className="text-3xl sm:text-4xl font-bold gradient-text">Dashboard</h1>
-                </div>
-                <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors self-start sm:self-auto font-medium text-sm">
-                    <LogOut className="w-4 h-4" /> Sign Out
-                </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10 mb-8 w-fit flex-wrap">
-                {([
-                    { id: "overview" as TabType, label: "Overview", icon: BarChart3 },
-                    { id: "products" as TabType, label: "Products", icon: Package },
-                    { id: "orders" as TabType, label: "Orders", icon: ShoppingCart, badge: newOrderCount },
-                    { id: "coupons" as TabType, label: "Coupons", icon: Tag },
-                    { id: "reviews" as TabType, label: "Reviews", icon: Star },
-                    { id: "settings" as TabType, label: "Settings", icon: Settings },
-                    { id: "oms" as TabType, label: "OMS", icon: Truck }
-                ]).map(t => (
-                    <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "orders") setNewOrderCount(0); }}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all relative ${tab === t.id ? "bg-violet-600/30 text-violet-300 border border-violet-500/30" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
-                        <t.icon className="w-4 h-4" />{t.label}
-                        {t.badge !== undefined && t.badge > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold animate-pulse">{t.badge}</span>}
-                    </button>
-                ))}
-            </div>
-
-            {/* ═══ OVERVIEW ═══ */}
-            {tab === "overview" && (
-                <div className="space-y-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div className="glass-card p-6 border border-white/5" style={{ transform: "none" }}><div className="flex items-center justify-between mb-4"><span className="text-sm text-gray-400">Total Revenue</span><div className="p-2 rounded-lg bg-emerald-500/10"><DollarSign className="w-5 h-5 text-emerald-400" /></div></div><p className="text-3xl font-bold text-white">৳{stats.totalRevenue.toLocaleString()}</p></div>
-                        <div className="glass-card p-6 border border-white/5" style={{ transform: "none" }}><div className="flex items-center justify-between mb-4"><span className="text-sm text-gray-400">Total Orders</span><div className="p-2 rounded-lg bg-violet-500/10"><TrendingUp className="w-5 h-5 text-violet-400" /></div></div><p className="text-3xl font-bold text-white">{stats.totalOrders}</p></div>
-                        <div className="glass-card p-6 border border-white/5" style={{ transform: "none" }}><div className="flex items-center justify-between mb-4"><span className="text-sm text-gray-400">Active Products</span><div className="p-2 rounded-lg bg-fuchsia-500/10"><Box className="w-5 h-5 text-fuchsia-400" /></div></div><p className="text-3xl font-bold text-white">{stats.totalProducts}</p></div>
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <button className="p-2 text-[var(--text-muted)] hover:text-[var(--foreground)] rounded-full hover:bg-[var(--background)]/50 transition-colors"><Bell className="w-5 h-5" /></button>
+                        <button className="p-2 text-[var(--text-muted)] hover:text-[var(--foreground)] rounded-full hover:bg-[var(--background)]/50 transition-colors hidden sm:block"><Settings className="w-5 h-5" /></button>
+                        <div className="h-6 w-px bg-[var(--border-dim)] mx-1 hidden sm:block"></div>
+                        <button onClick={handleLogout} className="flex items-center gap-2 sm:pl-2 text-sm font-medium text-[var(--text-muted)] hover:text-red-500 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold shrink-0">A</div>
+                            <LogOut className="w-4 h-4 hidden sm:block" />
+                        </button>
                     </div>
-                    <RevenueChart data={chartData} />
-                    <div><h3 className="text-lg font-semibold mb-4 text-gray-200">Recent Orders</h3>
-                        {orders.length === 0 ? <div className="glass-card p-10 text-center" style={{ transform: "none" }}><ShoppingCart className="w-10 h-10 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No orders yet.</p></div> : (
-                            <div className="space-y-3">{orders.slice(0, 5).map(o => (
-                                <div key={o._id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ transform: "none" }}>
-                                    <div><p className="font-medium text-white">Order #{o.orderNumber} — {o.customerName}</p><p className="text-sm text-gray-400">৳{o.totalAmount.toLocaleString()} • {new Date(o.createdAt).toLocaleDateString()}</p></div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border capitalize ${STATUS_COLORS[o.status]}`}>{o.status}</span>
-                                </div>
-                            ))}</div>
-                        )}
-                    </div>
-                </div>
-            )}
+                </header>
 
-            {/* ═══ PRODUCTS ═══ */}
-            {tab === "products" && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    {/* Upload Form */}
-                    <div className="glass-card p-8" style={{ transform: "none" }}>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Upload className="w-5 h-5 text-violet-400" /> Upload Product</h2>
-                        {pMsg && <div className={`flex items-center gap-2 p-4 rounded-xl mb-6 ${pMsg.type === "success" ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-300" : "bg-red-500/10 border border-red-500/20 text-red-300"}`}>{pMsg.type === "success" ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}{pMsg.text}</div>}
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div><label className="text-sm text-gray-400 mb-1 block">Product Name</label><input type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. Premium Headphones" className="input-field" /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Price (৳)</label><input type="number" value={pPrice} onChange={e => setPPrice(e.target.value)} placeholder="2500" className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Stock</label><input type="number" value={pStock} onChange={e => setPStock(e.target.value)} placeholder="10" className="input-field" /></div>
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[var(--background)] custom-scrollbar">
+
+                    {/* ═══ OVERVIEW ═══ */}
+                    {tab === "overview" && (
+                        <div className="space-y-6 max-w-7xl mx-auto">
+                            {/* Alert Banner */}
+                            <div className="bg-[#fff3cd] border-l-4 border-[#ffc107] text-[#856404] p-4 rounded-r-lg text-sm font-medium">
+                                We regret to inform you that our server is currently experiencing technical difficulties.
                             </div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Category</label><input type="text" value={pCat} onChange={e => setPCat(e.target.value)} placeholder="Electronics" className="input-field" /></div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Short description..." rows={3} className="input-field resize-none" /></div>
-                            {/* Drag & Drop */}
-                            <div>
-                                <div className="flex items-baseline justify-between mb-1">
-                                    <label className="text-sm text-gray-400 block">Product Images</label>
-                                    <span className="text-xs text-violet-400/80">Recommended: 1080x1080 (1:1) for Meta Ads</span>
-                                </div>
-                                <div onClick={() => fileRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={onDrop}
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-violet-400 bg-violet-500/10" : "border-gray-700 hover:border-violet-500/50"}`}>
-                                    {pPreviews.length > 0 ? <div className="grid grid-cols-3 gap-2">{pPreviews.map((p, i) => <img key={i} src={p} alt="" className="w-full h-24 object-cover rounded-lg" />)}</div>
-                                        : <div className="flex flex-col items-center gap-2 text-gray-500"><ImagePlus className="w-10 h-10" /><span className="text-sm">Drag & drop or click to upload</span></div>}
-                                </div>
-                                <input ref={fileRef} type="file" accept="image/*" multiple onChange={onImgChange} className="hidden" />
-                            </div>
-                            <div><label className="text-sm text-gray-400 mb-1 block">Video URL (Optional)</label><input type="text" value={pVideo} onChange={e => setPVideo(e.target.value)} placeholder="YouTube, Vimeo, or direct MP4 link" className="input-field" /></div>
-                            <DescriptionSectionEditor sections={pDescriptionSections} setSections={setPDescriptionSections} />
-                            <VariantEditor variants={pVariants} setVariants={setPVariants} />
-                            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-                                {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Uploading...</> : <><Upload className="w-5 h-5" />Upload Product</>}
-                            </button>
-                        </form>
-                    </div>
 
-                    {/* Product List */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold flex items-center gap-2"><Package className="w-5 h-5 text-fuchsia-400" /> Products ({sorted.length})</h2>
-                            {selectedIds.size > 0 && <button onClick={handleBulkDelete} className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium hover:bg-red-500/20"><Trash2 className="w-3 h-3" />Delete {selectedIds.size}</button>}
-                        </div>
-                        <div className="flex gap-2 mb-4">
-                            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input type="text" value={pSearch} onChange={e => { setPSearch(e.target.value); setPPage(1); }} placeholder="Search..." className="input-field pl-10 text-sm" /></div>
-                            <div className="relative"><select value={pSort} onChange={e => setPSort(e.target.value)} className="appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-violet-500/50 cursor-pointer">
-                                <option value="date-desc" className="bg-[#1a1225]">Newest</option><option value="date-asc" className="bg-[#1a1225]">Oldest</option>
-                                <option value="name-asc" className="bg-[#1a1225]">Name A-Z</option><option value="name-desc" className="bg-[#1a1225]">Name Z-A</option>
-                                <option value="price-asc" className="bg-[#1a1225]">Price ↑</option><option value="price-desc" className="bg-[#1a1225]">Price ↓</option>
-                                <option value="stock-asc" className="bg-[#1a1225]">Stock ↑</option><option value="stock-desc" className="bg-[#1a1225]">Stock ↓</option>
-                            </select><ArrowUpDown className="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
-                        </div>
-                        {/* Select All */}
-                        {pagedProducts.length > 0 && <label className="flex items-center gap-2 mb-3 text-xs text-gray-400 cursor-pointer"><input type="checkbox" checked={selectedIds.size === pagedProducts.length && pagedProducts.length > 0} onChange={toggleSelectAll} className="accent-violet-500" />Select all on page</label>}
-                        {pagedProducts.length === 0 ? <div className="glass-card p-12 text-center" style={{ transform: "none" }}><Package className="w-12 h-12 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No products found.</p></div> : (
-                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                                {pagedProducts.map(p => (
-                                    <div key={p._id} className={`glass-card flex items-center gap-3 p-3 ${selectedIds.has(p._id) ? "ring-1 ring-violet-500/50" : ""}`} style={{ transform: "none" }}>
-                                        <input type="checkbox" checked={selectedIds.has(p._id)} onChange={() => toggleSelect(p._id)} className="accent-violet-500 flex-shrink-0" />
-                                        {p.imageUrls?.[0] && <Image src={p.imageUrls[0]} alt={p.name} width={48} height={48} className="rounded-lg object-cover flex-shrink-0" />}
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium truncate text-sm">{p.name}</h3>
-                                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                                <span className="text-sm text-violet-400 font-semibold">৳{p.price.toLocaleString()}</span>
-                                                <span className="text-xs text-gray-500">•</span><span className="text-xs text-gray-400">{p.category || "General"}</span>
-                                                <span className="text-xs text-gray-500">•</span><span className={`text-xs font-medium ${(p.stock || 0) > 0 ? "text-emerald-400" : "text-red-400"}`}>{(p.stock || 0) > 0 ? `${p.stock} stock` : "Out"}</span>
-                                                {p.variants?.length > 0 && <><span className="text-xs text-gray-500">•</span><span className="text-xs text-fuchsia-400">{p.variants.length} variants</span></>}
-                                            </div>
-                                        </div>
-                                        <button onClick={() => openEdit(p)} className="p-2 rounded-lg hover:bg-violet-500/10 text-gray-500 hover:text-violet-400 transition-colors flex-shrink-0"><Edit3 className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDelete(p._id)} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors flex-shrink-0"><Trash2 className="w-4 h-4" /></button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {/* Pagination */}
-                        {totalPPages > 1 && (
-                            <div className="flex items-center justify-center gap-2 mt-4">
-                                <button disabled={pPage <= 1} onClick={() => setPPage(p => p - 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                                <span className="text-sm text-gray-400">{pPage} / {totalPPages}</span>
-                                <button disabled={pPage >= totalPPages} onClick={() => setPPage(p => p + 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ═══ ORDERS ═══ */}
-            {tab === "orders" && (
-                <div>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                        <h2 className="text-xl font-semibold flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-violet-400" /> Orders ({oTotal})</h2>
-                        <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/20 transition-colors text-sm font-medium self-start sm:self-auto"><Download className="w-4 h-4" />Export CSV</button>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" /><input type="text" value={oSearch} onChange={e => { setOSearch(e.target.value); setOPage(1); }} placeholder="Search name, phone, TrxID..." className="input-field pl-10 text-sm" /></div>
-                        <div className="relative"><select value={oStatus} onChange={e => { setOStatus(e.target.value); setOPage(1); }} className="appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-violet-500/50 cursor-pointer capitalize">
-                            <option value="all" className="bg-[#1a1225]">All Status</option>{["incomplete", "pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="bg-[#1a1225] capitalize">{s}</option>)}
-                        </select><ChevronDown className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
-                    </div>
-                    {orders.length === 0 ? <div className="glass-card p-16 text-center" style={{ transform: "none" }}><ShoppingCart className="w-12 h-12 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No orders found.</p></div> : (
-                        <div className="space-y-4">
-                            {orders.map(o => (
-                                <div key={o._id} className="glass-card p-0 overflow-hidden" style={{ transform: "none" }}>
-                                    {/* Header */}
-                                    <div className="bg-white/[0.02] border-b border-white/5 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-400">
-                                                <Package className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <h3 className="font-bold text-white text-base">Order #{o.orderNumber}</h3>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${STATUS_COLORS[o.status]}`}>{o.status}</span>
-                                                </div>
-                                                <p className="text-xs text-gray-500">{new Date(o.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                                            </div>
-                                        </div>
-                                        <div className="relative flex items-center gap-2">
-                                            <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Status:</span>
-                                            <div className="relative">
-                                                <select value={o.status} onChange={e => updateStatus(o._id, e.target.value)} className="appearance-none bg-white/5 border border-white/10 text-white text-xs font-medium rounded-lg px-3 py-1.5 pr-7 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer capitalize">
-                                                    {["incomplete", "pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="bg-[#1a1225] capitalize">{s}</option>)}
-                                                </select>
-                                                <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                            </div>
+                            {/* Stat Cards */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center"><Package className="w-5 h-5 text-primary" /></div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-semibold text-[var(--text-muted)]">Total Orders</p>
+                                            <p className="text-2xl font-bold text-[var(--foreground)]">{stats.totalOrders.toLocaleString()}</p>
                                         </div>
                                     </div>
-                                    {/* Details */}
-                                    <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-0.5 text-gray-500"><Users className="w-4 h-4" /></div>
-                                            <div>
-                                                <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Customer</span>
-                                                <p className="text-gray-200 font-medium">{o.customerName}</p>
-                                                <p className="text-gray-400 text-xs mt-0.5 flex items-center gap-1.5"><Phone className="w-3 h-3" /> {o.customerPhone}</p>
-                                            </div>
+                                    <div className="flex items-center justify-between text-xs font-medium">
+                                        <span className="text-emerald-500 flex items-center"><TrendingUp className="w-3 h-3 mr-1" /> 2.3% <span className="text-[var(--text-muted)] ml-1">Last Week</span></span>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); setTab('orders'); }} className="text-[var(--text-muted)] hover:text-[var(--foreground)]">View More</a>
+                                    </div>
+                                </div>
+                                <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="w-10 h-10 rounded bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center"><Users className="w-5 h-5 text-orange-500" /></div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-semibold text-[var(--text-muted)]">New Leads</p>
+                                            <p className="text-2xl font-bold text-[var(--foreground)]">{stats.totalProducts.toLocaleString()}</p>
                                         </div>
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-0.5 text-gray-500"><MapPin className="w-4 h-4" /></div>
-                                            <div>
-                                                <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Delivery Info</span>
-                                                <p className="text-gray-300 text-sm leading-relaxed">{o.customerAddress}</p>
-                                            </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs font-medium">
+                                        <span className="text-emerald-500 flex items-center"><TrendingUp className="w-3 h-3 mr-1" /> 8.1% <span className="text-[var(--text-muted)] ml-1">Last Month</span></span>
+                                        <a href="#" className="text-[var(--text-muted)] hover:text-[var(--foreground)]">View More</a>
+                                    </div>
+                                </div>
+                                <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="w-10 h-10 rounded bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center"><Tag className="w-5 h-5 text-orange-500" /></div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-semibold text-[var(--text-muted)]">Deals</p>
+                                            <p className="text-2xl font-bold text-[var(--foreground)]">{coupons.length}</p>
                                         </div>
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-0.5 text-gray-500"><CreditCard className="w-4 h-4" /></div>
-                                            <div>
-                                                <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Payment</span>
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">{o.paymentMethod || 'COD'}</span>
-                                                {o.paymentMethod !== 'cod' && (
-                                                    <div className="mt-1.5 bg-black/20 rounded p-1.5 outline outline-1 outline-white/5">
-                                                        <div className="text-[10px] text-gray-500 flex justify-between items-center mt-0.5">
-                                                            <span>Status:</span>
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-violet-300 font-mono capitalize">{o.status}</span>
-                                                            </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs font-medium">
+                                        <span className="text-red-500 flex items-center"><TrendingUp className="w-3 h-3 mr-1 rotate-180" /> 0.3% <span className="text-[var(--text-muted)] ml-1">Last Month</span></span>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); setTab('coupons'); }} className="text-[var(--text-muted)] hover:text-[var(--foreground)]">View More</a>
+                                    </div>
+                                </div>
+                                <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="w-10 h-10 rounded bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center"><DollarSign className="w-5 h-5 text-orange-500" /></div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-semibold text-[var(--text-muted)]">Booked Revenue</p>
+                                            <p className="text-2xl font-bold text-[var(--foreground)]">৳{(stats.totalRevenue / 1000).toFixed(1)}k</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs font-medium">
+                                        <span className="text-red-500 flex items-center"><TrendingUp className="w-3 h-3 mr-1 rotate-180" /> 10.6% <span className="text-[var(--text-muted)] ml-1">Last Month</span></span>
+                                        <a href="#" className="text-[var(--text-muted)] hover:text-[var(--foreground)]">View More</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Charts Row */}
+                            <div className="grid grid-cols-1 gap-6">
+                                <RevenueChart data={chartData} />
+                            </div>
+
+                            {/* Recent Orders */}
+                            <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-dim)] shadow-sm overflow-x-auto">
+                                <div className="p-6 border-b border-[var(--border-dim)] flex justify-between items-center">
+                                    <h3 className="text-base font-bold text-[var(--foreground)]">Recent Orders</h3>
+                                    <button onClick={() => setTab('products')} className="text-xs font-semibold text-[#ff6b2c] flex items-center gap-1 hover:text-[#e0561b] rounded bg-[#ff6b2c]/10 px-3 py-1.5 transition-colors"><Plus className="w-3 h-3" /> Create Order</button>
+                                </div>
+                                {orders.length === 0 ? <div className="p-10 text-center"><ShoppingCart className="w-10 h-10 text-[var(--text-dim)]/50 mx-auto mb-3" /><p className="text-[var(--text-dim)]/70">No orders yet.</p></div> : (
+                                    <table className="w-full text-sm min-w-[600px]">
+                                        <thead className="bg-[var(--background)] text-[var(--text-muted)] text-xs uppercase tracking-wider">
+                                            <tr>
+                                                <th className="px-6 py-4 text-left font-semibold">Order ID</th>
+                                                <th className="px-6 py-4 text-left font-semibold">Customer</th>
+                                                <th className="px-6 py-4 text-left font-semibold">Date</th>
+                                                <th className="px-6 py-4 text-left font-semibold">Total</th>
+                                                <th className="px-6 py-4 text-left font-semibold">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[var(--border-dim)]">
+                                            {orders.slice(0, 5).map(o => (
+                                                <tr key={o._id} className="hover:bg-[var(--background)]/80 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-[var(--foreground)]">#{o.orderNumber}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-[var(--text-muted)]">{o.customerName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-[var(--text-dim)]">{new Date(o.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-[var(--foreground)]">৳{o.totalAmount.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${o.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : o.status === 'incomplete' ? 'bg-[var(--border-dim)]/50 text-[var(--text-muted)]' : o.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : o.status === 'shipped' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>{o.status}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══ PRODUCTS ═══ */}
+                    {tab === "products" && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+                            {/* Upload Form */}
+                            <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm self-start">
+                                <h2 className="text-lg font-bold text-[var(--foreground)] mb-6 flex items-center gap-2"><Upload className="w-5 h-5 text-[#ff6b2c]" /> Upload Product</h2>
+                                {pMsg && <div className={`flex items-center gap-2 p-3 font-medium rounded-lg mb-6 text-sm ${pMsg.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>{pMsg.type === "success" ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}{pMsg.text}</div>}
+                                <form onSubmit={handleCreate} className="space-y-5">
+                                    <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Product Name</label><input type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. Premium Headphones" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Price (৳)</label><input type="number" value={pPrice} onChange={e => setPPrice(e.target.value)} placeholder="2500" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                        <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Stock</label><input type="number" value={pStock} onChange={e => setPStock(e.target.value)} placeholder="10" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    </div>
+                                    <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Category</label><input type="text" value={pCat} onChange={e => setPCat(e.target.value)} placeholder="Electronics" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Description</label><textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Short description..." rows={3} className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)] resize-none" /></div>
+                                    {/* Drag & Drop */}
+                                    <div>
+                                        <div className="flex items-baseline justify-between mb-1.5">
+                                            <label className="text-sm font-semibold text-[var(--text-muted)] block">Product Images</label>
+                                            <span className="text-xs text-orange-500 font-medium">1080x1080 recommended</span>
+                                        </div>
+                                        <div onClick={() => fileRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={onDrop}
+                                            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors bg-[var(--background)] ${dragOver ? "border-[#ff6b2c] bg-orange-50" : "border-[var(--border-dim)] hover:border-[#ff6b2c]/50"}`}>
+                                            {pPreviews.length > 0 ? <div className="grid grid-cols-3 gap-2">{pPreviews.map((p, i) => <img key={i} src={p} alt="" className="w-full h-24 object-cover rounded-lg border border-[var(--border-dim)]" />)}</div>
+                                                : <div className="flex flex-col items-center gap-2 text-[var(--text-dim)]/70"><ImagePlus className="w-10 h-10 text-[var(--text-dim)]/50" /><span className="text-sm font-medium text-[var(--text-dim)]">Drag & drop or click</span></div>}
+                                        </div>
+                                        <input ref={fileRef} type="file" accept="image/*" multiple onChange={onImgChange} className="hidden" />
+                                    </div>
+                                    <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Video URL (Optional)</label><input type="text" value={pVideo} onChange={e => setPVideo(e.target.value)} placeholder="YouTube, Vimeo, or direct MP4 link" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    <DescriptionSectionEditor sections={pDescriptionSections} setSections={setPDescriptionSections} />
+                                    <VariantEditor variants={pVariants} setVariants={setPVariants} />
+                                    <button type="submit" disabled={loading} className="w-full py-2.5 bg-[#ff6b2c] hover:bg-[#e0561b] text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
+                                        {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Uploading...</> : <><Upload className="w-5 h-5" />Upload Product</>}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Product List */}
+                            <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm flex flex-col h-[calc(100vh-8rem)]">
+                                <div className="flex items-center justify-between mb-6 shrink-0">
+                                    <h2 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">Products Catalog <span className="text-xs font-semibold bg-[var(--border-dim)]/50 text-[var(--text-muted)] px-2 py-0.5 rounded-full">{sorted.length}</span></h2>
+                                    {selectedIds.size > 0 && <button onClick={handleBulkDelete} className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors"><Trash2 className="w-3 h-3" />Delete {selectedIds.size}</button>}
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-3 mb-4 shrink-0">
+                                    <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)]/70" /><input type="text" value={pSearch} onChange={e => { setPSearch(e.target.value); setPPage(1); }} placeholder="Search products..." className="w-full pl-9 pr-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    <div className="relative"><select value={pSort} onChange={e => setPSort(e.target.value)} className="appearance-none bg-[var(--background)] border border-[var(--border-dim)] text-[var(--text-muted)] text-sm font-medium rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] cursor-pointer">
+                                        <option value="date-desc">Newest First</option><option value="date-asc">Oldest First</option>
+                                        <option value="name-asc">Name A-Z</option><option value="name-desc">Name Z-A</option>
+                                        <option value="price-asc">Price: Low-High</option><option value="price-desc">Price: High-Low</option>
+                                        <option value="stock-asc">Stock: Low-High</option><option value="stock-desc">Stock: High-Low</option>
+                                    </select><ChevronDown className="w-4 h-4 text-[var(--text-dim)]/70 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
+                                </div>
+                                {/* Select All */}
+                                {pagedProducts.length > 0 && <label className="flex items-center gap-2 mb-3 px-2 text-xs font-semibold text-[var(--text-dim)] cursor-pointer shrink-0"><input type="checkbox" checked={selectedIds.size === pagedProducts.length && pagedProducts.length > 0} onChange={toggleSelectAll} className="w-4 h-4 text-[#ff6b2c] rounded border-[var(--border-dim)] focus:ring-[#ff6b2c]" />Select all on page</label>}
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar border border-[var(--border-dim)] rounded-lg">
+                                    {pagedProducts.length === 0 ? <div className="p-12 text-center"><Package className="w-12 h-12 text-[var(--text-dim)]/50 mx-auto mb-3" /><p className="text-[var(--text-dim)] font-medium">No products found.</p></div> : (
+                                        <div className="divide-y divide-[var(--border-dim)]">
+                                            {pagedProducts.map(p => (
+                                                <div key={p._id} className={`flex items-center gap-4 p-4 transition-colors hover:bg-[var(--background)] ${selectedIds.has(p._id) ? "bg-orange-50/50" : ""}`}>
+                                                    <input type="checkbox" checked={selectedIds.has(p._id)} onChange={() => toggleSelect(p._id)} className="w-4 h-4 text-[#ff6b2c] rounded border-[var(--border-dim)] focus:ring-[#ff6b2c] flex-shrink-0 mt-1 self-start sm:self-center" />
+                                                    {p.imageUrls?.[0] ? <img src={p.imageUrls[0]} alt={p.name} className="w-12 h-12 rounded bg-[var(--border-dim)]/50 object-cover flex-shrink-0" /> : <div className="w-12 h-12 rounded bg-[var(--border-dim)]/50 flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5 text-[var(--text-dim)]/50" /></div>}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-bold text-[var(--foreground)] text-sm truncate">{p.name}</h3>
+                                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                            <span className="text-sm font-bold text-[#ff6b2c]">৳{p.price.toLocaleString()}</span>
+                                                            <span className="text-xs text-[var(--text-dim)]/50">•</span><span className="text-xs font-medium text-[var(--text-dim)]">{p.category || "General"}</span>
+                                                            <span className="text-xs text-[var(--text-dim)]/50">•</span><span className={`text-xs font-bold ${(p.stock || 0) > 0 ? "text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" : "text-red-600 bg-red-50 px-1.5 py-0.5 rounded"}`}>{(p.stock || 0) > 0 ? `${p.stock} In Stock` : "Out of Stock"}</span>
+                                                            {p.variants?.length > 0 && <><span className="text-xs text-[var(--text-dim)]/50">•</span><span className="text-xs font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">{p.variants.length} Variants</span></>}
                                                         </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Products & Footer */}
-                                    <div className="bg-black/20 p-4 sm:p-5 border-t border-white/5 flex flex-col md:flex-row md:items-end justify-between gap-5">
-                                        <div className="flex-1">
-                                            <span className="block text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Order Items</span>
-                                            <div className="flex flex-wrap gap-2">
-                                                {o.products.map((p, i) => (
-                                                    <div key={i} className="flex items-center gap-2 bg-white/5 border border-white/5 px-2.5 py-1.5 rounded-md">
-                                                        <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-300">{p.quantity}</div>
-                                                        <span className="text-xs text-gray-300">{p.name} <span className="text-gray-500 mx-1">•</span> ৳{(p.price * p.quantity).toLocaleString()}</span>
+                                                    <div className="flex items-center gap-1 flex-shrink-0 self-start sm:self-center">
+                                                        <button onClick={() => openEdit(p)} className="p-2 rounded hover:bg-[var(--border-dim)]/50 text-[var(--text-dim)]/70 hover:text-[var(--foreground)] transition-colors" title="Edit"><Edit3 className="w-4 h-4" /></button>
+                                                        <button onClick={() => handleDelete(p._id)} className="p-2 rounded hover:bg-[var(--border-dim)]/50 text-[var(--text-dim)]/70 hover:text-red-500 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
                                                     </div>
-                                                ))}
-                                            </div>
-                                            {o.couponCode && <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20 rounded text-xs font-medium"><Tag className="w-3 h-3" /> {o.couponCode} applied (-৳{(o.discountAmount || 0).toLocaleString()})</div>}
-                                        </div>
-                                        <div className="flex flex-col md:items-end gap-3 min-w-[200px]">
-                                            <div className="md:text-right">
-                                                <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold block mb-0.5">Total Amount</span>
-                                                <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">৳{o.totalAmount.toLocaleString()}</span>
-                                            </div>
-                                            <button onClick={() => printInvoice(o)} className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 border border-violet-500/20 rounded-lg transition-colors text-sm font-semibold">
-                                                <Printer className="w-4 h-4" /> View Invoice
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )
-                    }
-                    {
-                        oPages > 1 && (
-                            <div className="flex items-center justify-center gap-2 mt-6">
-                                <button disabled={oPage <= 1} onClick={() => setOPage(p => p - 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
-                                <span className="text-sm text-gray-400">{oPage} / {oPages}</span>
-                                <button disabled={oPage >= oPages} onClick={() => setOPage(p => p + 1)} className="p-2 rounded-lg hover:bg-white/10 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
-                            </div>
-                        )
-                    }
-                </div >
-            )}
-
-            {/* ═══ COUPONS ═══ */}
-            {
-                tab === "coupons" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div className="glass-card p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Tag className="w-5 h-5 text-violet-400" /> Create Coupon</h2>
-                            <form onSubmit={createCoupon} className="space-y-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Coupon Code</label><input type="text" value={cCode} onChange={e => setCCode(e.target.value.toUpperCase())} placeholder="SAVE20" className="input-field font-mono uppercase" /></div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Discount %</label><input type="number" value={cDisc} onChange={e => setCDisc(e.target.value)} placeholder="20" className="input-field" /></div>
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Max Discount (৳)</label><input type="number" value={cMax} onChange={e => setCMax(e.target.value)} placeholder="0 = no cap" className="input-field" /></div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Usage Limit</label><input type="number" value={cLimit} onChange={e => setCLimit(e.target.value)} placeholder="0 = unlimited" className="input-field" /></div>
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Expires</label><input type="date" value={cExpiry} onChange={e => setCExpiry(e.target.value)} className="input-field" /></div>
-                                </div>
-                                <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"><Plus className="w-5 h-5" />Create Coupon</button>
-                            </form>
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><Tag className="w-5 h-5 text-fuchsia-400" /> Active Coupons ({coupons.length})</h2>
-                            {coupons.length === 0 ? <div className="glass-card p-12 text-center" style={{ transform: "none" }}><Tag className="w-12 h-12 text-gray-700 mx-auto mb-3" /><p className="text-gray-500">No coupons yet.</p></div> : (
-                                <div className="space-y-3">
-                                    {coupons.map(c => (
-                                        <div key={c._id} className={`glass-card p-4 flex items-center justify-between ${!c.isActive ? "opacity-50" : ""}`} style={{ transform: "none" }}>
-                                            <div>
-                                                <p className="font-mono font-bold text-white">{c.code}</p>
-                                                <p className="text-sm text-gray-400">{c.discountPercent}% off{c.maxDiscount > 0 ? ` (max ৳${c.maxDiscount})` : ""} • {c.usedCount}/{c.usageLimit || "∞"} used{c.expiresAt ? ` • Expires ${new Date(c.expiresAt).toLocaleDateString()}` : ""}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={() => toggleCoupon(c._id)} className={`px-3 py-1 rounded-lg text-xs font-medium ${c.isActive ? "bg-emerald-500/10 text-emerald-400" : "bg-gray-500/10 text-gray-400"}`}>{c.isActive ? "Active" : "Paused"}</button>
-                                                <button onClick={() => deleteCoupon(c._id)} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* ═══ REVIEWS ═══ */}
-            {
-                tab === "reviews" && (
-                    <div>
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400" /> Customer Reviews ({reviews.length})</h2>
-                        {reviews.length === 0 ? (
-                            <div className="glass-card p-16 text-center" style={{ transform: "none" }}>
-                                <Star className="w-12 h-12 text-gray-700 mx-auto mb-3" />
-                                <p className="text-gray-500">No reviews found.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {reviews.map(r => (
-                                    <div key={r._id} className="glass-card p-5 flex flex-col justify-between" style={{ transform: "none" }}>
-                                        <div>
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div>
-                                                    <h4 className="font-semibold text-white">{r.customerName}</h4>
-                                                    <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
                                                 </div>
-                                                <div className="flex items-center gap-0.5 text-amber-400">
-                                                    {[1, 2, 3, 4, 5].map(star => (
-                                                        <Star key={star} className={`w-3.5 h-3.5 ${star <= r.rating ? 'fill-current' : 'text-gray-700'}`} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-violet-400 font-mono mb-2 break-all pt-2 border-t border-white/5">Product ID: {r.productId}</div>
-                                            {r.comment && <p className="text-sm text-gray-300 line-clamp-4 leading-relaxed mt-2">{r.comment}</p>}
-                                        </div>
-                                        <div className="mt-4 pt-4 border-t border-white/5 flex justify-end">
-                                            <button onClick={() => deleteReview(r._id)} className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete Review</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )
-            }
-
-            {/* ═══ SETTINGS ═══ */}
-            {
-                tab === "settings" && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                        {/* Shipping Zones */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-violet-400" /> Shipping Zones</h2>
-                            <div className="space-y-3">
-                                {sZones.map((z, i) => (
-                                    <div key={i} className="grid grid-cols-[1fr_1fr_100px_40px] gap-2 items-center">
-                                        <input type="text" value={z.id} onChange={e => { const n = [...sZones]; n[i].id = e.target.value; setSZones(n); }} placeholder="zone-id" className="input-field text-sm font-mono" />
-                                        <input type="text" value={z.label} onChange={e => { const n = [...sZones]; n[i].label = e.target.value; setSZones(n); }} placeholder="Label" className="input-field text-sm" />
-                                        <input type="number" value={z.cost} onChange={e => { const n = [...sZones]; n[i].cost = parseInt(e.target.value) || 0; setSZones(n); }} placeholder="Cost" className="input-field text-sm" />
-                                        <button onClick={() => { const n = [...sZones]; n.splice(i, 1); setSZones(n); }} className="p-2 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-400"><X className="w-4 h-4" /></button>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <button onClick={() => setSZones([...sZones, { id: '', label: '', cost: 0 }])} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"><Plus className="w-3 h-3" />Add Zone</button>
-                            </div>
-                            <button onClick={() => saveSetting('shippingZones', sZones)} disabled={sLoading} className="btn-primary w-full mt-4 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Shipping</button>
-
-                            {/* Delivery Zone Toggle */}
-                            <div className="mt-6 pt-5 border-t border-gray-800">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-white">Show Delivery Zone on Checkout</h3>
-                                        <p className="text-xs text-gray-500 mt-0.5">Toggle delivery zone picker</p>
-                                    </div>
-                                    <button onClick={async () => { const nv = !sShowDeliveryZone; setSShowDeliveryZone(nv); await saveSetting('showDeliveryZone', nv); }} className={`relative w-12 h-6 rounded-full transition-colors ${sShowDeliveryZone ? 'bg-sky-500' : 'bg-gray-700'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sShowDeliveryZone ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Categories */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Package className="w-5 h-5 text-fuchsia-400" /> Categories</h2>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {sCategories.map((c, i) => (
-                                    <div key={i} className="flex items-center gap-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm">
-                                        {c}
-                                        <button onClick={() => { const n = [...sCategories]; n.splice(i, 1); setSCategories(n); }} className="p-0.5 hover:text-red-400 text-gray-500"><X className="w-3 h-3" /></button>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex gap-2">
-                                <input type="text" value={sNewCat} onChange={e => setSNewCat(e.target.value)} placeholder="New category name" className="input-field text-sm flex-1" onKeyDown={e => { if (e.key === 'Enter' && sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} />
-                                <button onClick={() => { if (sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} className="px-4 py-2 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg hover:bg-violet-500/20 text-sm"><Plus className="w-4 h-4" /></button>
-                            </div>
-                            <button onClick={() => saveSetting('categories', sCategories)} disabled={sLoading} className="btn-primary w-full mt-4 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Categories</button>
-                        </div>
-
-                        {/* Banner / Notice */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Bell className="w-5 h-5 text-yellow-400" /> Store Banner / Notice</h2>
-                            <div className="flex items-center gap-3 mb-4">
-                                <button onClick={() => setSBanner({ ...sBanner, enabled: !sBanner.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sBanner.enabled ? 'bg-violet-500' : 'bg-gray-700'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sBanner.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                </button>
-                                <span className="text-sm text-gray-400">{sBanner.enabled ? 'Banner Visible' : 'Banner Hidden'}</span>
-                            </div>
-                            <textarea value={sBanner.text} onChange={e => setSBanner({ ...sBanner, text: e.target.value })} placeholder="e.g. 🎉 Free delivery on orders above ৳2000! Limited time offer." rows={2} className="input-field resize-none mb-4" />
-                            {sBanner.enabled && sBanner.text && (
-                                <div className="p-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 text-sm text-gray-200 mb-4">Preview: {sBanner.text}</div>
-                            )}
-                            <button onClick={() => saveSetting('banner', sBanner)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Banner</button>
-                        </div>
-
-                        {/* Marketing & Tracking */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-blue-400" /> Tracking IDs</h2>
-                            <div className="space-y-4 mb-6">
-                                <div>
-                                    <label className="text-sm text-gray-400 mb-1 block">Google Tag Manager (GTM) ID</label>
-                                    <input type="text" value={sMarketing.gtmId} onChange={e => setSMarketing({ ...sMarketing, gtmId: e.target.value })} placeholder="e.g. GTM-XXXXXXX" className="input-field" />
-                                </div>
-                                <div>
-                                    <label className="text-sm text-gray-400 mb-1 block">Meta Pixel (Facebook) ID</label>
-                                    <input type="text" value={sMarketing.pixelId} onChange={e => setSMarketing({ ...sMarketing, pixelId: e.target.value })} placeholder="e.g. 123456789012345" className="input-field" />
-                                </div>
-                                <div>
-                                    <label className="text-sm text-gray-400 mb-1 block">GA4 Measurement ID</label>
-                                    <input type="text" value={sMarketing.ga4Id} onChange={e => setSMarketing({ ...sMarketing, ga4Id: e.target.value })} placeholder="e.g. G-XXXXXXXXXX" className="input-field" />
-                                </div>
-                            </div>
-                            <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
-                        </div>
-
-                        {/* Marquee Ticker */}
-                        <div className="glass-card p-6 sm:p-8 xl:col-span-2" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-emerald-400" /> Marquee / Scrolling Text</h2>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <button onClick={() => setSMarquee({ ...sMarquee, enabled: !sMarquee.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sMarquee.enabled ? 'bg-emerald-500' : 'bg-gray-700'}`}>
-                                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sMarquee.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                        </button>
-                                        <span className="text-sm text-gray-400">{sMarquee.enabled ? 'Ticker Visible' : 'Ticker Hidden'}</span>
-                                    </div>
-                                    <input type="text" value={sMarquee.text} onChange={e => setSMarquee({ ...sMarquee, text: e.target.value })} placeholder="e.g. 🔥 Flash Sale — 50% OFF on all items! | Free Delivery inside Dhaka" className="input-field mb-4" />
-
-                                    {sMarquee.enabled && sMarquee.text && (
-                                        <div className={`p-2 rounded-xl text-sm text-white mt-4 overflow-hidden ${sMarquee.bgColor === 'gradient' ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' :
-                                            sMarquee.bgColor === 'red' ? 'bg-red-600' :
-                                                sMarquee.bgColor === 'blue' ? 'bg-blue-600' :
-                                                    sMarquee.bgColor === 'green' ? 'bg-emerald-600' :
-                                                        sMarquee.bgColor === 'orange' ? 'bg-orange-500' : 'bg-gray-900'
-                                            }`}>
-                                            <span className="marquee-text" style={{ animationDuration: `${sMarquee.speed}s` }}>{sMarquee.text}</span>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    {/* Speed */}
-                                    <div className="mb-4">
-                                        <label className="text-sm text-gray-400 mb-2 block">Speed: {sMarquee.speed}s (lower = faster)</label>
-                                        <input type="range" min="5" max="30" value={sMarquee.speed} onChange={e => setSMarquee({ ...sMarquee, speed: parseInt(e.target.value) })} className="w-full accent-violet-500" />
-                                        <div className="flex justify-between text-xs text-gray-600 mt-1"><span>Fast (5s)</span><span>Slow (30s)</span></div>
-                                    </div>
 
-                                    {/* Background Color */}
-                                    <div className="mb-4">
-                                        <label className="text-sm text-gray-400 mb-2 block">Background Color</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {[
-                                                { id: 'gradient', label: 'Gradient', cls: 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600' },
-                                                { id: 'red', label: 'Red', cls: 'bg-red-600' },
-                                                { id: 'blue', label: 'Blue', cls: 'bg-blue-600' },
-                                                { id: 'green', label: 'Green', cls: 'bg-emerald-600' },
-                                                { id: 'orange', label: 'Orange', cls: 'bg-orange-500' },
-                                                { id: 'black', label: 'Dark', cls: 'bg-gray-900' },
-                                            ].map(c => (
-                                                <button key={c.id} onClick={() => setSMarquee({ ...sMarquee, bgColor: c.id })} className={`px-3 py-1.5 rounded-lg text-xs font-medium text-white border-2 transition-all ${c.cls} ${sMarquee.bgColor === c.id ? 'border-white scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}>{c.label}</button>
-                                            ))}
+                                {/* Pagination */}
+                                {totalPPages > 1 && (
+                                    <div className="flex items-center justify-between pt-4 shrink-0 border-t border-[var(--border-dim)] mt-4">
+                                        <p className="text-xs text-[var(--text-dim)] font-medium">Page {pPage} of {totalPPages}</p>
+                                        <div className="flex items-center gap-1 text-sm">
+                                            <button disabled={pPage <= 1} onClick={() => setPPage(p => p - 1)} className="px-3 py-1.5 rounded border border-[var(--border-dim)] text-[var(--text-muted)] hover:bg-[var(--background)] disabled:opacity-50 disabled:bg-transparent font-medium transition-colors">Prev</button>
+                                            <button disabled={pPage >= totalPPages} onClick={() => setPPage(p => p + 1)} className="px-3 py-1.5 rounded border border-[var(--border-dim)] text-[var(--text-muted)] hover:bg-[var(--background)] disabled:opacity-50 disabled:bg-transparent font-medium transition-colors">Next</button>
                                         </div>
                                     </div>
-                                    <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="btn-primary w-full mt-2 flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
-                                </div>
+                                )}
                             </div>
                         </div>
+                    )}
 
-                        {/* Feature Toggles */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-fuchsia-400" /> Feature Toggles</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-white mb-1">Track Order</h3>
-                                        <p className="text-xs text-gray-500">Public order tracking.</p>
-                                    </div>
-                                    <button onClick={() => setSFeatures({ ...sFeatures, trackOrder: !sFeatures.trackOrder })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.trackOrder ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.trackOrder ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                    </button>
-                                </div>
-                                <div className="glass-card p-4 border border-white/5 flex items-start justify-between">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-white mb-1">Reviews</h3>
-                                        <p className="text-xs text-gray-500">Enable 5-star reviews.</p>
-                                    </div>
-                                    <button onClick={() => setSFeatures({ ...sFeatures, productReviews: !sFeatures.productReviews })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.productReviews ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.productReviews ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                    </button>
-                                </div>
-                                <div className="glass-card p-4 border border-white/5 flex flex-col justify-between h-full md:col-span-2">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h3 className="text-sm font-medium text-white mb-1">Related Products</h3>
-                                            <p className="text-xs text-gray-500">Show items at bottom.</p>
+                    {/* ═══ ORDERS ═══ */}
+                    {tab === "orders" && (
+                        <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                <h2 className="text-xl font-bold text-[var(--foreground)] flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-[#ff6b2c]" /> Orders ({oTotal})</h2>
+                                <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-bold self-start sm:self-auto"><Download className="w-4 h-4" />Export CSV</button>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                                <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-dim)]/70" /><input type="text" value={oSearch} onChange={e => { setOSearch(e.target.value); setOPage(1); }} placeholder="Search name, phone, TrxID..." className="w-full pl-9 pr-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                <div className="relative"><select value={oStatus} onChange={e => { setOStatus(e.target.value); setOPage(1); }} className="appearance-none bg-[var(--background)] border border-[var(--border-dim)] text-[var(--text-muted)] text-sm font-medium rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] cursor-pointer capitalize">
+                                    <option value="all">All Status</option>{["incomplete", "pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+                                </select><ChevronDown className="w-4 h-4 text-[var(--text-dim)]/70 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /></div>
+                            </div>
+                            {orders.length === 0 ? <div className="p-16 text-center"><ShoppingCart className="w-12 h-12 text-[var(--text-dim)]/50 mx-auto mb-3" /><p className="text-[var(--text-dim)] font-medium">No orders found.</p></div> : (
+                                <div className="space-y-4">
+                                    {orders.map(o => (
+                                        <div key={o._id} className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-xl overflow-hidden shadow-sm hover:shadow transition-shadow">
+                                            {/* Header */}
+                                            <div className="bg-[var(--background)] border-b border-[var(--border-dim)] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-[#ff6b2c]">
+                                                        <Package className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <h3 className="font-bold text-[var(--foreground)] text-base">Order #{o.orderNumber}</h3>
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${o.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : o.status === 'shipped' ? 'bg-blue-50 text-blue-700 border-blue-200' : o.status === 'confirmed' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : o.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-[var(--background)] text-[var(--text-muted)] border-[var(--border-dim)]'}`}>{o.status}</span>
+                                                        </div>
+                                                        <p className="text-xs font-medium text-[var(--text-dim)]">{new Date(o.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="relative flex items-center gap-2">
+                                                    <span className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold">Status:</span>
+                                                    <div className="relative">
+                                                        <select value={o.status} onChange={e => updateStatus(o._id, e.target.value)} className="appearance-none bg-[var(--bg-card)] border border-[var(--border-dim)] text-[var(--text-muted)] text-xs font-bold rounded-lg px-3 py-1.5 pr-7 focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] cursor-pointer capitalize shadow-sm">
+                                                            {["incomplete", "pending", "confirmed", "shipped", "delivered"].map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+                                                        </select>
+                                                        <ChevronDown className="w-3.5 h-3.5 text-[var(--text-dim)]/70 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* Details */}
+                                            <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 text-[var(--text-dim)]/70 bg-[var(--background)] p-1.5 rounded"><Users className="w-4 h-4" /></div>
+                                                    <div>
+                                                        <span className="block text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-1">Customer</span>
+                                                        <p className="text-[var(--foreground)] font-bold">{o.customerName}</p>
+                                                        <p className="text-[var(--text-muted)] text-xs mt-0.5 flex items-center gap-1.5 font-medium"><Phone className="w-3 h-3 text-[var(--text-dim)]/70" /> {o.customerPhone}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 text-[var(--text-dim)]/70 bg-[var(--background)] p-1.5 rounded"><MapPin className="w-4 h-4" /></div>
+                                                    <div>
+                                                        <span className="block text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-1">Delivery Info</span>
+                                                        <p className="text-[var(--text-muted)] text-sm leading-relaxed font-medium">{o.customerAddress}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 text-[var(--text-dim)]/70 bg-[var(--background)] p-1.5 rounded"><CreditCard className="w-4 h-4" /></div>
+                                                    <div>
+                                                        <span className="block text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-1">Payment</span>
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-700 border border-violet-100">{o.paymentMethod || 'COD'}</span>
+                                                        {o.paymentMethod !== 'cod' && (
+                                                            <div className="mt-1.5 bg-[var(--background)] rounded p-1.5 border border-[var(--border-dim)]">
+                                                                <div className="text-[10px] text-[var(--text-muted)] flex justify-between items-center mt-0.5 font-bold">
+                                                                    <span>Status:</span>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className="text-indigo-600 font-mono capitalize">{o.status}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Products & Footer */}
+                                            <div className="bg-[var(--background)] p-4 sm:p-5 border-t border-[var(--border-dim)] flex flex-col md:flex-row md:items-end justify-between gap-5">
+                                                <div className="flex-1">
+                                                    <span className="block text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold mb-2">Order Items</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {o.products.map((p, i) => (
+                                                            <div key={i} className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-dim)] shadow-sm px-2.5 py-1.5 rounded-md">
+                                                                <div className="w-5 h-5 rounded bg-[var(--background)] border border-[var(--border-dim)] flex items-center justify-center text-[10px] font-bold text-[var(--text-muted)]">{p.quantity}</div>
+                                                                <span className="text-xs font-semibold text-[var(--text-muted)] truncate max-w-[150px] sm:max-w-[200px]">{p.name}</span> <span className="text-[var(--text-dim)]/70 mx-1 text-xs">•</span> <span className="text-xs font-bold text-[#ff6b2c]">৳{(p.price * p.quantity).toLocaleString()}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    {o.couponCode && <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-[#ff6b2c]/10 text-[#ff6b2c] border border-[#ff6b2c]/20 rounded text-xs font-bold"><Tag className="w-3 h-3" /> {o.couponCode} applied (-৳{(o.discountAmount || 0).toLocaleString()})</div>}
+                                                </div>
+                                                <div className="flex flex-col md:items-end gap-3 min-w-[200px]">
+                                                    <div className="md:text-right">
+                                                        <span className="text-xs text-[var(--text-dim)] uppercase tracking-wider font-bold block mb-0.5">Total Amount</span>
+                                                        <span className="text-2xl font-black text-[var(--foreground)] tracking-tight">৳{o.totalAmount.toLocaleString()}</span>
+                                                    </div>
+                                                    <button onClick={() => printInvoice(o)} className="w-full flex justify-center items-center gap-2 px-4 py-2 bg-[var(--bg-card)] hover:bg-[var(--background)] text-[var(--text-muted)] border border-[var(--border-dim)] shadow-sm rounded-lg transition-colors text-sm font-bold">
+                                                        <Printer className="w-4 h-4 text-[var(--text-dim)]" /> View Invoice
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-fuchsia-500' : 'bg-gray-700'}`}>
-                                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm mb-2">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features</button>
-                        </div>
-
-                        {/* ═══ STORE BRANDING ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Store className="w-5 h-5 text-violet-400" /> Store Branding</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Name</label><input type="text" value={sBranding.storeName} onChange={e => setSBranding({ ...sBranding, storeName: e.target.value })} className="input-field" /></div>
-                                <div className="md:col-span-2"><label className="text-sm text-gray-400 mb-1 block">Store Tagline</label><input type="text" value={sBranding.storeTagline} onChange={e => setSBranding({ ...sBranding, storeTagline: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Logo URL</label><input type="text" value={sBranding.logoUrl} onChange={e => setSBranding({ ...sBranding, logoUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Favicon URL</label><input type="text" value={sBranding.faviconUrl} onChange={e => setSBranding({ ...sBranding, faviconUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Store Initial</label><input type="text" maxLength={2} value={sBranding.storeInitial} onChange={e => setSBranding({ ...sBranding, storeInitial: e.target.value })} className="input-field w-20" /></div>
-                                {sBranding.logoUrl && <div className="p-3 bg-white/5 rounded-xl flex items-center justify-center"><img src={sBranding.logoUrl} alt="Logo" className="h-10 object-contain" /></div>}
-                            </div>
-                            <button onClick={() => saveSetting('storeBranding', sBranding)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Branding</button>
-                        </div>
-
-                        {/* ═══ CONTACT INFO ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Phone className="w-5 h-5 text-emerald-400" /> Contact Info</h2>
-                            <div className="space-y-4 mb-6">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Phone Number</label><input type="text" value={sContact.phone} onChange={e => setSContact({ ...sContact, phone: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Email</label><input type="email" value={sContact.email} onChange={e => setSContact({ ...sContact, email: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Address</label><textarea value={sContact.address} onChange={e => setSContact({ ...sContact, address: e.target.value })} rows={2} className="input-field resize-none" /></div>
-                            </div>
-                            <button onClick={() => saveSetting('contactInfo', sContact)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Contact</button>
-                        </div>
-
-                        {/* ═══ SOCIAL LINKS ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Social Links</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Facebook className="w-3.5 h-3.5" /> Facebook</label><input type="text" value={sSocial.facebook} onChange={e => setSSocial({ ...sSocial, facebook: e.target.value })} placeholder="URL" className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Instagram className="w-3.5 h-3.5" /> Instagram</label><input type="text" value={sSocial.instagram} onChange={e => setSSocial({ ...sSocial, instagram: e.target.value })} placeholder="URL" className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</label><input type="text" value={sSocial.whatsapp} onChange={e => setSSocial({ ...sSocial, whatsapp: e.target.value })} placeholder="Number" className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block flex items-center gap-1"><Youtube className="w-3.5 h-3.5" /> YouTube</label><input type="text" value={sSocial.youtube} onChange={e => setSSocial({ ...sSocial, youtube: e.target.value })} placeholder="URL" className="input-field" /></div>
-                            </div>
-                            <button onClick={() => saveSetting('socialLinks', sSocial)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Social</button>
-                        </div>
-
-                        {/* ═══ HERO SECTION ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Layout className="w-5 h-5 text-pink-400" /> Homepage Hero</h2>
-                            <div className="space-y-4 mb-6">
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => setSHero({ ...sHero, showNewArrivals: !sHero.showNewArrivals })} className={`relative w-12 h-6 rounded-full transition-colors ${sHero.showNewArrivals ? 'bg-pink-500' : 'bg-gray-700'}`}>
-                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${sHero.showNewArrivals ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                                    </button>
-                                    <label className="text-sm text-gray-400">Show New Arrivals Badge</label>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Badge Text</label><input type="text" value={sHero.badge} onChange={e => setSHero({ ...sHero, badge: e.target.value })} className="input-field" /></div>
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Title</label><input type="text" value={sHero.title} onChange={e => setSHero({ ...sHero, title: e.target.value })} className="input-field" /></div>
-                                </div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Title Highlight</label><input type="text" value={sHero.titleHighlight} onChange={e => setSHero({ ...sHero, titleHighlight: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={sHero.description} onChange={e => setSHero({ ...sHero, description: e.target.value })} rows={2} className="input-field resize-none" /></div>
-                            </div>
-                            <button onClick={() => saveSetting('heroContent', sHero)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Hero</button>
-                        </div>
-
-                        {/* ═══ FOOTER CONTENT ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" /> Footer Content</h2>
-                            <div className="space-y-4 mb-6">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Copyright Text ({'{year}'})</label><input type="text" value={sFooter.copyrightText} onChange={e => setSFooter({ ...sFooter, copyrightText: e.target.value })} className="input-field" /></div>
-                                <div>
-                                    <label className="text-sm text-gray-400 mb-1 block">Payment Methods (csv)</label>
-                                    <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="input-field" placeholder="Cash on Delivery" />
-                                </div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Footer Description</label><textarea value={sFooter.description} onChange={e => setSFooter({ ...sFooter, description: e.target.value })} rows={3} className="input-field resize-none" /></div>
-                            </div>
-                            <button onClick={() => saveSetting('footerContent', sFooter)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Footer</button>
-                        </div>
-
-                        {/* ═══ SEO SETTINGS ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-400" /> SEO Tracking & Config</h2>
-                            <div className="space-y-4 mb-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Site Title</label><input type="text" value={sSeo.siteTitle} onChange={e => setSSeo({ ...sSeo, siteTitle: e.target.value })} className="input-field" /></div>
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Site URL</label><input type="text" value={sSeo.siteUrl} onChange={e => setSSeo({ ...sSeo, siteUrl: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                                </div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Keywords</label><input type="text" value={sSeo.keywords} onChange={e => setSSeo({ ...sSeo, keywords: e.target.value })} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">OG Image URL</label><input type="text" value={sSeo.ogImage} onChange={e => setSSeo({ ...sSeo, ogImage: e.target.value })} placeholder="https://..." className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Meta Description</label><textarea value={sSeo.metaDescription} onChange={e => setSSeo({ ...sSeo, metaDescription: e.target.value })} rows={3} className="input-field resize-none" /></div>
-                            </div>
-                            <button onClick={() => saveSetting('seo', sSeo)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save SEO</button>
-                        </div>
-
-                        {/* ═══ APPEARANCE ═══ */}
-                        <div className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
-                            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2"><Palette className="w-5 h-5 text-orange-400" /> Appearance</h2>
-                            <div className="mb-6">
-                                <label className="text-sm text-gray-400 mb-3 block">Products Per Row (Desktop)</label>
-                                <div className="grid grid-cols-3 gap-2 border border-white/5 bg-white/5 rounded-xl p-1">
-                                    {[3, 4, 5].map(n => (
-                                        <button key={n} onClick={() => setSAppearance({ ...sAppearance, productsPerRow: n })} className={`p-2 rounded-lg text-sm font-medium transition-all ${sAppearance.productsPerRow === n ? 'bg-violet-500/80 text-white shadow-lg shadow-violet-500/20' : 'text-gray-400 hover:text-white'}`}>{n} cols</button>
                                     ))}
                                 </div>
-                            </div>
-                            <button onClick={() => saveSetting('appearance', sAppearance)} disabled={sLoading} className="btn-primary w-full flex items-center justify-center gap-2 text-sm">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Appearance</button>
-                        </div>
-
-                    </div>
-                )
-            }
-
-            {/* ═══ OMS (Order Management — Pathao) ═══ */}
-            {
-                tab === "oms" && (() => {
-                    // Fetch OMS orders on tab open
-                    const fetchOmsOrders = async () => {
-                        setOmsLoading(true);
-                        try { const res = await fetch('/api/orders'); if (res.ok) { const data = await res.json(); setOmsOrders(data.orders || data); } } catch (err) { console.error(err); }
-                        finally { setOmsLoading(false); }
-                    };
-                    if (omsOrders.length === 0 && !omsLoading) fetchOmsOrders();
-
-                    const openOmsModal = (order: any) => {
-                        const totalQty = order.products?.reduce((s: number, p: any) => s + (p.quantity || 1), 0) || 1;
-                        const desc = order.products?.map((p: any) => `${p.name} x${p.quantity}`).join(', ') || `Order #${order.orderNumber}`;
-                        const amount = order.paymentMethod === 'cod' ? order.totalAmount : 0;
-                        setOmsModalData({ itemWeight: 0.5, deliveryType: 48, specialInstruction: `Order #${order.orderNumber} | Payment: ${(order.paymentMethod || 'cod').toUpperCase()}`, itemDescription: desc, amountToCollect: amount, itemQuantity: totalQty });
-                        setOmsModalOrder(order);
-                    };
-
-                    const handleOmsSubmit = async () => {
-                        if (!omsModalOrder) return;
-                        setOmsProcessingId(omsModalOrder._id);
-                        setOmsModalOrder(null);
-                        try {
-                            const result = await sendOrderToPathao(omsModalOrder._id, omsModalData);
-                            if (result?.success) {
-                                showToast('success', `✅ Sent! CN: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
-                                setOmsOrders(prev => prev.map(o => o._id === omsModalOrder._id ? { ...o, status: 'confirmed', consignmentId: result.consignmentId, pathaoStatus: 'Pickup_Pending' } : o));
-                            } else { showToast('error', `❌ ${result?.error}`); }
-                        } catch (err: any) { showToast('error', `❌ ${err.message}`); }
-                        finally { setOmsProcessingId(null); }
-                    };
-
-                    const omsStatusStyles: Record<string, string> = {
-                        pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-                        confirmed: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
-                        shipped: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-                        delivered: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-                    };
-
-                    return (
-                        <div className="space-y-6">
-                            {/* Header */}
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-xl font-semibold flex items-center gap-2"><Truck className="w-5 h-5 text-violet-400" /> Pathao Courier — OMS</h2>
-                                <button onClick={() => { setOmsOrders([]); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-400">
-                                    <RefreshCw className="w-4 h-4" /> Refresh
-                                </button>
-                            </div>
-
-                            {/* Table */}
-                            <div className="glass-card border border-white/5 overflow-hidden" style={{ transform: 'none' }}>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
-                                        <thead className="border-b border-white/10">
-                                            <tr>
-                                                <th className="px-6 py-4 text-gray-400 font-medium">Order</th>
-                                                <th className="px-6 py-4 text-gray-400 font-medium">Customer</th>
-                                                <th className="px-6 py-4 text-gray-400 font-medium">Payment</th>
-                                                <th className="px-6 py-4 text-gray-400 font-medium">Status</th>
-                                                <th className="px-6 py-4 text-gray-400 font-medium">Amount</th>
-                                                <th className="px-6 py-4 text-gray-400 font-medium text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {omsLoading ? (
-                                                <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /><p>Loading orders...</p></td></tr>
-                                            ) : omsOrders.length === 0 ? (
-                                                <tr><td colSpan={6} className="px-6 py-16 text-center text-gray-500"><Package className="w-10 h-10 mx-auto mb-2 opacity-40" /><p>No orders found.</p></td></tr>
-                                            ) : (
-                                                omsOrders.map((order: any) => (
-                                                    <React.Fragment key={order._id}>
-                                                        <tr className={`transition-colors ${omsExpandedId === order._id ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]'}`}>
-                                                            <td className="px-6 py-4">
-                                                                <span className="font-semibold text-white">#{order.orderNumber}</span>
-                                                                <div className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="font-medium text-white">{order.customerName}</div>
-                                                                <div className="text-xs text-gray-500">{order.customerPhone}</div>
-                                                            </td>
-                                                            <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-gray-400">{order.paymentMethod || 'cod'}</span></td>
-                                                            <td className="px-6 py-4">
-                                                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>{order.status}</span>
-                                                                {order.consignmentId && <div className="text-[11px] text-gray-500 mt-1 font-mono">CN: {order.consignmentId}</div>}
-                                                                {order.consignmentId && (
-                                                                    <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-violet-400 hover:text-violet-300 mt-1 underline">
-                                                                        {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
-                                                                    </button>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-6 py-4 font-semibold text-white">৳{order.totalAmount}</td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                {!order.consignmentId ? (
-                                                                    <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
-                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-medium rounded-lg transition-all border border-violet-500/30 disabled:opacity-50">
-                                                                        {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
-                                                                    </button>
-                                                                ) : (
-                                                                    <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
-                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm font-medium border border-white/10 rounded-lg transition-all">
-                                                                        Track Order
-                                                                    </a>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                        {omsExpandedId === order._id && order.consignmentId ? (() => {
-                                                            const activeIdx = getTimelineIndex(order.pathaoStatus);
-                                                            return (
-                                                                <tr className="bg-black/20 border-b border-white/5">
-                                                                    <td colSpan={6} className="p-0">
-                                                                        <div className="p-6">
-                                                                            <div className="flex items-center gap-2 mb-6">
-                                                                                <Truck className="w-5 h-5 text-violet-400" />
-                                                                                <h3 className="text-lg font-bold text-white">Delivery Timeline — #{order.orderNumber}</h3>
-                                                                                <span className="ml-auto text-xs text-gray-500 font-mono">CN: {order.consignmentId}</span>
-                                                                            </div>
-                                                                            <div className="flex items-center justify-between relative">
-                                                                                <div className="absolute top-6 left-8 right-8 h-0.5 bg-white/10 z-0" />
-                                                                                <div className="absolute top-6 left-8 h-0.5 bg-violet-500 z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
-                                                                                {TIMELINE_STEPS.map((step, idx) => {
-                                                                                    const Icon = step.icon;
-                                                                                    const isCompleted = idx <= activeIdx;
-                                                                                    const isCurrent = idx === activeIdx;
-                                                                                    return (
-                                                                                        <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
-                                                                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
-                                                                                            ${isCurrent ? 'border-violet-500 bg-violet-500/20 text-violet-400 shadow-lg shadow-violet-500/20' :
-                                                                                                    isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
-                                                                                                        'border-white/10 bg-white/5 text-gray-600'}`}>
-                                                                                                <Icon className="w-5 h-5" />
-                                                                                            </div>
-                                                                                            <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-violet-400' : isCompleted ? 'text-emerald-400' : 'text-gray-600'}`}>{step.label}</span>
-                                                                                        </div>
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })() : null}
-                                                    </React.Fragment>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            {/* OMS Send Modal */}
-                            {omsModalOrder && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                                    <div className="bg-[#110C1D] border border-violet-500/20 rounded-2xl shadow-2xl shadow-violet-500/10 w-full max-w-lg mx-4 overflow-hidden">
-                                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-white">Send to Pathao</h3>
-                                                <p className="text-xs text-gray-500">Order #{omsModalOrder.orderNumber} — {omsModalOrder.customerName}</p>
-                                            </div>
-                                            <button onClick={() => setOmsModalOrder(null)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                                        </div>
-                                        <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Delivery Type</label>
-                                                <select value={omsModalData.deliveryType} onChange={e => setOmsModalData({ ...omsModalData, deliveryType: Number(e.target.value) })} className="input-field">
-                                                    <option value={48} className="bg-[#1a1225]">Normal Delivery</option>
-                                                    <option value={12} className="bg-[#1a1225]">On-Demand Delivery</option>
-                                                </select>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Total Weight (kg)</label>
-                                                    <select value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="input-field">
-                                                        <option value={0.2} className="bg-[#1a1225]">0-0.2</option>
-                                                        <option value={0.5} className="bg-[#1a1225]">0.2-0.5</option>
-                                                        <option value={1} className="bg-[#1a1225]">0.5-1</option>
-                                                        <option value={1.5} className="bg-[#1a1225]">1-1.5</option>
-                                                        <option value={2} className="bg-[#1a1225]">1.5-2</option>
-                                                        <option value={3} className="bg-[#1a1225]">2-3</option>
-                                                        <option value={4} className="bg-[#1a1225]">3-4</option>
-                                                        <option value={5} className="bg-[#1a1225]">4-5</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-400 mb-1.5">Quantity</label>
-                                                    <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => {
-                                                        const newQty = parseInt(e.target.value) || 1;
-                                                        const baseAmount = omsModalOrder.paymentMethod === 'cod' ? (omsModalOrder.totalAmount / (omsModalData.itemQuantity || 1)) : 0;
-                                                        setOmsModalData({ ...omsModalData, itemQuantity: newQty, amountToCollect: baseAmount * newQty });
-                                                    }} className="input-field" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Amount to Collect (৳)</label>
-                                                <input type="number" min="0" value={omsModalData.amountToCollect} onChange={e => setOmsModalData({ ...omsModalData, amountToCollect: parseFloat(e.target.value) || 0 })} className="input-field" />
-                                                <p className="text-xs text-gray-600 mt-1">{(omsModalOrder.paymentMethod || 'cod') === 'cod' ? 'COD — customer pays on delivery' : 'Prepaid — already paid'}</p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Item Description & Price</label>
-                                                <input type="text" value={omsModalData.itemDescription} onChange={e => setOmsModalData({ ...omsModalData, itemDescription: e.target.value })} className="input-field" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-400 mb-1.5">Special Instructions</label>
-                                                <textarea rows={3} value={omsModalData.specialInstruction} onChange={e => setOmsModalData({ ...omsModalData, specialInstruction: e.target.value })} className="input-field resize-none" placeholder="e.g. Handle with care, fragile..." />
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10">
-                                            <button onClick={() => setOmsModalOrder(null)} className="px-4 py-2.5 text-sm font-medium text-gray-400 border border-white/10 rounded-lg hover:bg-white/5">Cancel</button>
-                                            <button onClick={handleOmsSubmit} className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 text-sm font-semibold rounded-lg border border-violet-500/30 transition-all">
-                                                <Send className="w-4 h-4" /> Send to Pathao
-                                            </button>
-                                        </div>
+                            )}
+                            {oPages > 1 && (
+                                <div className="flex items-center justify-between pt-6 mt-6 border-t border-[var(--border-dim)]">
+                                    <p className="text-xs text-[var(--text-dim)] font-medium">Page {oPage} of {oPages}</p>
+                                    <div className="flex items-center gap-1 text-sm">
+                                        <button disabled={oPage <= 1} onClick={() => setOPage(p => p - 1)} className="px-3 py-1.5 rounded border border-[var(--border-dim)] text-[var(--text-muted)] hover:bg-[var(--background)] disabled:opacity-50 disabled:bg-transparent font-medium transition-colors">Prev</button>
+                                        <button disabled={oPage >= oPages} onClick={() => setOPage(p => p + 1)} className="px-3 py-1.5 rounded border border-[var(--border-dim)] text-[var(--text-muted)] hover:bg-[var(--background)] disabled:opacity-50 disabled:bg-transparent font-medium transition-colors">Next</button>
                                     </div>
                                 </div>
                             )}
                         </div>
-                    );
-                })()
-            }
+                    )}
 
-            {/* ═══ EDIT MODAL ═══ */}
-            {
-                editP && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-                        <div className="bg-[#110C1D] border border-violet-500/20 rounded-2xl p-8 max-w-lg w-full shadow-2xl shadow-violet-500/10 relative my-8">
-                            <button onClick={() => setEditP(null)} className="absolute top-4 right-4 p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Edit3 className="w-5 h-5 text-violet-400" /> Edit Product</h2>
-                            <div className="space-y-4">
-                                <div><label className="text-sm text-gray-400 mb-1 block">Name</label><input type="text" value={eName} onChange={e => setEName(e.target.value)} className="input-field" /></div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Price (৳)</label><input type="number" value={ePrice} onChange={e => setEPrice(e.target.value)} className="input-field" /></div>
-                                    <div><label className="text-sm text-gray-400 mb-1 block">Stock</label><input type="number" value={eStock} onChange={e => setEStock(e.target.value)} className="input-field" /></div>
-                                </div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Category</label><input type="text" value={eCat} onChange={e => setECat(e.target.value)} className="input-field" /></div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Description</label><textarea value={eDesc} onChange={e => setEDesc(e.target.value)} rows={3} className="input-field resize-none" /></div>
-                                {/* Image Management */}
-                                <div><label className="text-sm text-gray-400 mb-1 block">Images</label>
-                                    <div className="grid grid-cols-4 gap-2 mb-2">{eImages.map((url, i) => (
-                                        <div key={i} className="relative group"><img src={url} alt="" className="w-full h-20 object-cover rounded-lg" />
-                                            <button onClick={() => removeEditImage(i)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
+                    {/* ═══ COUPONS ═══ */}
+                    {tab === "coupons" && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+                            <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm self-start">
+                                <h2 className="text-lg font-bold text-[var(--foreground)] mb-6 flex items-center gap-2"><Tag className="w-5 h-5 text-[#ff6b2c]" /> Create Coupon</h2>
+                                <form onSubmit={createCoupon} className="space-y-5">
+                                    <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Coupon Code</label><input type="text" value={cCode} onChange={e => setCCode(e.target.value.toUpperCase())} placeholder="SAVE20" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)] font-mono uppercase" /></div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Discount %</label><input type="number" value={cDisc} onChange={e => setCDisc(e.target.value)} placeholder="20" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                        <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Max Discount (৳)</label><input type="number" value={cMax} onChange={e => setCMax(e.target.value)} placeholder="0 = no cap" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Usage Limit</label><input type="number" value={cLimit} onChange={e => setCLimit(e.target.value)} placeholder="0 = unlimited" className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                        <div><label className="text-sm font-semibold text-[var(--text-muted)] mb-1.5 block">Expires</label><input type="date" value={cExpiry} onChange={e => setCExpiry(e.target.value)} className="w-full px-4 py-2 border border-[var(--border-dim)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ff6b2c]/20 focus:border-[#ff6b2c] text-[var(--foreground)]" /></div>
+                                    </div>
+                                    <button type="submit" className="w-full py-2.5 bg-[#ff6b2c] hover:bg-[#e0561b] text-white rounded-lg font-bold flex items-center justify-center gap-2 transition-colors"><Plus className="w-5 h-5" />Create Coupon</button>
+                                </form>
+                            </div>
+                            <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm flex flex-col h-[calc(100vh-8rem)]">
+                                <h2 className="text-lg font-bold text-[var(--foreground)] mb-6 flex items-center gap-2 shrink-0"><Tag className="w-5 h-5 text-[#ff6b2c]" /> Active Coupons ({coupons.length})</h2>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar border border-[var(--border-dim)] rounded-lg">
+                                    {coupons.length === 0 ? <div className="p-12 text-center"><Tag className="w-12 h-12 text-[var(--text-dim)]/50 mx-auto mb-3" /><p className="text-[var(--text-dim)] font-medium">No coupons yet.</p></div> : (
+                                        <div className="divide-y divide-[var(--border-dim)]">
+                                            {coupons.map(c => (
+                                                <div key={c._id} className={`p-4 flex items-center justify-between transition-colors hover:bg-[var(--background)] ${!c.isActive ? "opacity-50" : ""}`}>
+                                                    <div>
+                                                        <p className="font-mono font-bold text-[var(--foreground)] text-base mb-1">{c.code}</p>
+                                                        <p className="text-xs font-semibold text-[var(--text-dim)]">{c.discountPercent}% off{c.maxDiscount > 0 ? ` (max ৳${c.maxDiscount})` : ""} • <span className="text-[#ff6b2c] font-bold">{c.usedCount}/{c.usageLimit || "∞"} used</span>{c.expiresAt ? ` • Expires ${new Date(c.expiresAt).toLocaleDateString()}` : ""}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => toggleCoupon(c._id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${c.isActive ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100" : "bg-[var(--border-dim)]/50 text-[var(--text-muted)] hover:bg-[var(--border-dim)] border border-[var(--border-dim)]"}`}>{c.isActive ? "Active" : "Paused"}</button>
+                                                        <button onClick={() => deleteCoupon(c._id)} className="p-2 rounded-lg hover:bg-red-50 text-[var(--text-dim)]/70 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}</div>
-                                    <button type="button" onClick={() => editFileRef.current?.click()} className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-1"><Plus className="w-3 h-3" />Add Images</button>
-                                    <input ref={editFileRef} type="file" accept="image/*" multiple onChange={addEditImages} className="hidden" />
+                                    )}
                                 </div>
-                                <div><label className="text-sm text-gray-400 mb-1 block">Video URL</label><input type="text" value={eVideo} onChange={e => setEVideo(e.target.value)} className="input-field" /></div>
-                                <DescriptionSectionEditor sections={eDescriptionSections} setSections={setEDescriptionSections} />
-                                <VariantEditor variants={eVariants} setVariants={setEVariants} />
-                                <button onClick={saveEdit} className="btn-primary w-full flex items-center justify-center gap-2"><CheckCircle className="w-5 h-5" /> Save Changes</button>
                             </div>
                         </div>
-                    </div>
-                )
-            }
-        </div >
+                    )}
+
+                    {/* ═══ REVIEWS ═══ */}
+                    {tab === "reviews" && (
+                        <div className="bg-[var(--bg-card)] p-6 rounded-xl border border-[var(--border-dim)] shadow-sm max-w-7xl mx-auto">
+                            <h2 className="text-xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2"><Star className="w-5 h-5 text-amber-400 fill-amber-400" /> Customer Reviews ({reviews.length})</h2>
+                            {reviews.length === 0 ? (
+                                <div className="p-16 text-center border border-[var(--border-dim)] rounded-xl bg-[var(--background)] text-[var(--text-dim)]/70">
+                                    <Star className="w-12 h-12 mx-auto mb-3" />
+                                    <p className="font-medium">No reviews found.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {reviews.map(r => (
+                                        <div key={r._id} className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+                                            <div>
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <h4 className="font-bold text-[var(--foreground)]">{r.customerName}</h4>
+                                                        <p className="text-xs font-medium text-[var(--text-dim)]">{new Date(r.createdAt).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-0.5 text-amber-400">
+                                                        {[1, 2, 3, 4, 5].map(star => (
+                                                            <Star key={star} className={`w-3.5 h-3.5 ${star <= r.rating ? 'fill-current' : 'text-gray-200'}`} />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="text-[11px] text-[var(--text-dim)] font-mono mb-3 break-all bg-[var(--background)] p-1.5 rounded-md border border-[var(--border-dim)] w-fit">ID: {r.productId}</div>
+                                                {r.comment && <p className="text-sm font-medium text-[var(--text-muted)] line-clamp-4 leading-relaxed">{r.comment}</p>}
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t border-[var(--border-dim)] flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => deleteReview(r._id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-xs font-bold"><Trash2 className="w-3 h-3" /> Delete</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ═══ SETTINGS ═══ */}
+                    {
+                        tab === "settings" && (
+                            <>
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                                    {/* Shipping Zones */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Settings className="w-5 h-5 text-primary" /> Shipping Zones</h2>
+                                        <div className="space-y-3">
+                                            {sZones.map((z, i) => (
+                                                <div key={i} className="grid grid-cols-[1fr_1fr_100px_40px] gap-2 items-center">
+                                                    <input type="text" value={z.id} onChange={e => { const n = [...sZones]; n[i].id = e.target.value; setSZones(n); }} placeholder="zone-id" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--foreground)] font-mono focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                                    <input type="text" value={z.label} onChange={e => { const n = [...sZones]; n[i].label = e.target.value; setSZones(n); }} placeholder="Label" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                                    <input type="number" value={z.cost} onChange={e => { const n = [...sZones]; n[i].cost = parseInt(e.target.value) || 0; setSZones(n); }} placeholder="Cost" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                                    <button onClick={() => { const n = [...sZones]; n.splice(i, 1); setSZones(n); }} className="p-2 rounded-lg hover:bg-danger/10 text-[var(--text-dim)] hover:text-danger transition-colors"><X className="w-4 h-4" /></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2 mt-4">
+                                            <button onClick={() => setSZones([...sZones, { id: '', label: '', cost: 0 }])} className="text-xs text-primary hover:text-primary-600 flex items-center gap-1 font-medium"><Plus className="w-3 h-3" />Add Zone</button>
+                                        </div>
+                                        <button onClick={() => saveSetting('shippingZones', sZones)} disabled={sLoading} className="w-full mt-4 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Shipping</button>
+
+                                        {/* Delivery Zone Toggle */}
+                                        <div className="mt-6 pt-5 border-t border-[var(--border-dim)]">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="text-sm font-medium text-[var(--foreground)]">Show Delivery Zone on Checkout</h3>
+                                                    <p className="text-xs text-[var(--text-dim)] mt-0.5">Toggle delivery zone picker</p>
+                                                </div>
+                                                <button onClick={async () => { const nv = !sShowDeliveryZone; setSShowDeliveryZone(nv); await saveSetting('showDeliveryZone', nv); }} className={`relative w-12 h-6 rounded-full transition-colors ${sShowDeliveryZone ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sShowDeliveryZone ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Categories */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Package className="w-5 h-5 text-fuchsia-500" /> Categories</h2>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {sCategories.map((c, i) => (
+                                                <div key={i} className="flex items-center gap-1 px-3 py-1.5 bg-[var(--border-dim)]/50 border border-[var(--border-dim)] rounded-lg text-sm text-[var(--foreground)]">
+                                                    {c}
+                                                    <button onClick={() => { const n = [...sCategories]; n.splice(i, 1); setSCategories(n); }} className="p-0.5 hover:text-danger text-[var(--text-dim)] transition-colors"><X className="w-3 h-3" /></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <input type="text" value={sNewCat} onChange={e => setSNewCat(e.target.value)} placeholder="New category name" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none flex-1" onKeyDown={e => { if (e.key === 'Enter' && sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} />
+                                            <button onClick={() => { if (sNewCat.trim()) { setSCategories([...sCategories, sNewCat.trim()]); setSNewCat(''); } }} className="px-4 py-2 bg-primary/10 border border-primary/20 text-primary rounded-lg hover:bg-primary/20 text-sm transition-colors"><Plus className="w-4 h-4" /></button>
+                                        </div>
+                                        <button onClick={() => saveSetting('categories', sCategories)} disabled={sLoading} className="w-full mt-4 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Categories</button>
+                                    </div>
+
+                                    {/* Banner / Notice */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Bell className="w-5 h-5 text-yellow-500" /> Store Banner / Notice</h2>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <button onClick={() => setSBanner({ ...sBanner, enabled: !sBanner.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sBanner.enabled ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sBanner.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                            </button>
+                                            <span className="text-sm font-medium text-[var(--text-muted)]">{sBanner.enabled ? 'Banner Visible' : 'Banner Hidden'}</span>
+                                        </div>
+                                        <textarea value={sBanner.text} onChange={e => setSBanner({ ...sBanner, text: e.target.value })} placeholder="e.g. 🎉 Free delivery on orders above ৳2000! Limited time offer." rows={2} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none mb-4" />
+                                        {sBanner.enabled && sBanner.text && (
+                                            <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-sm text-primary mb-4">Preview: {sBanner.text}</div>
+                                        )}
+                                        <button onClick={() => saveSetting('banner', sBanner)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Banner</button>
+                                    </div>
+
+                                    {/* Marketing & Tracking */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><BarChart3 className="w-5 h-5 text-blue-500" /> Tracking IDs</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div>
+                                                <label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Google Tag Manager (GTM) ID</label>
+                                                <input type="text" value={sMarketing.gtmId} onChange={e => setSMarketing({ ...sMarketing, gtmId: e.target.value })} placeholder="e.g. GTM-XXXXXXX" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Meta Pixel (Facebook) ID</label>
+                                                <input type="text" value={sMarketing.pixelId} onChange={e => setSMarketing({ ...sMarketing, pixelId: e.target.value })} placeholder="e.g. 123456789012345" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                            </div>
+                                            <div>
+                                                <label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">GA4 Measurement ID</label>
+                                                <input type="text" value={sMarketing.ga4Id} onChange={e => setSMarketing({ ...sMarketing, ga4Id: e.target.value })} placeholder="e.g. G-XXXXXXXXXX" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                            </div>
+                                        </div>
+                                        <button onClick={() => saveSetting('marketing', sMarketing)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Tracking IDs</button>
+                                    </div>
+
+                                    {/* Marquee Ticker */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8 xl:col-span-2">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><TrendingUp className="w-5 h-5 text-emerald-500" /> Marquee / Scrolling Text</h2>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <button onClick={() => setSMarquee({ ...sMarquee, enabled: !sMarquee.enabled })} className={`relative w-12 h-6 rounded-full transition-colors ${sMarquee.enabled ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sMarquee.enabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                                    </button>
+                                                    <span className="text-sm font-medium text-[var(--text-muted)]">{sMarquee.enabled ? 'Ticker Visible' : 'Ticker Hidden'}</span>
+                                                </div>
+                                                <input type="text" value={sMarquee.text} onChange={e => setSMarquee({ ...sMarquee, text: e.target.value })} placeholder="e.g. 🔥 Flash Sale — 50% OFF on all items! | Free Delivery inside Dhaka" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none mb-4" />
+
+                                                {sMarquee.enabled && sMarquee.text && (
+                                                    <div className={`p-2 rounded-xl text-sm mt-4 overflow-hidden ${sMarquee.bgColor === 'gradient' ? 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white' :
+                                                        sMarquee.bgColor === 'red' ? 'bg-danger text-white' :
+                                                            sMarquee.bgColor === 'blue' ? 'bg-blue-600 text-white' :
+                                                                sMarquee.bgColor === 'green' ? 'bg-success text-white' :
+                                                                    sMarquee.bgColor === 'orange' ? 'bg-orange-500 text-white' : 'bg-[var(--foreground)] text-white'
+                                                        }`}>
+                                                        <span className="marquee-text" style={{ animationDuration: `${sMarquee.speed}s` }}>{sMarquee.text}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                {/* Speed */}
+                                                <div className="mb-4">
+                                                    <label className="text-sm font-medium text-[var(--text-muted)] mb-2 block">Speed: {sMarquee.speed}s (lower = faster)</label>
+                                                    <input type="range" min="5" max="30" value={sMarquee.speed} onChange={e => setSMarquee({ ...sMarquee, speed: parseInt(e.target.value) })} className="w-full accent-primary" />
+                                                    <div className="flex justify-between text-xs text-[var(--text-dim)] mt-1"><span>Fast (5s)</span><span>Slow (30s)</span></div>
+                                                </div>
+
+                                                {/* Background Color */}
+                                                <div className="mb-4">
+                                                    <label className="text-sm font-medium text-[var(--text-muted)] mb-2 block">Background Color</label>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {[
+                                                            { id: 'gradient', label: 'Gradient', cls: 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white' },
+                                                            { id: 'red', label: 'Red', cls: 'bg-danger text-white' },
+                                                            { id: 'blue', label: 'Blue', cls: 'bg-blue-600 text-white' },
+                                                            { id: 'green', label: 'Green', cls: 'bg-success text-white' },
+                                                            { id: 'orange', label: 'Orange', cls: 'bg-orange-500 text-white' },
+                                                            { id: 'black', label: 'Dark', cls: 'bg-[var(--foreground)] text-white' },
+                                                        ].map(c => (
+                                                            <button key={c.id} onClick={() => setSMarquee({ ...sMarquee, bgColor: c.id })} className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${c.cls} ${sMarquee.bgColor === c.id ? 'border-primary ring-2 ring-primary ring-offset-1 scale-105' : 'border-transparent opacity-80 hover:opacity-100'}`}>{c.label}</button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => saveSetting('marquee', sMarquee)} disabled={sLoading} className="w-full mt-2 flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Ticker</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Feature Toggles */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Settings className="w-5 h-5 text-fuchsia-500" /> Feature Toggles</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                            <div className="bg-[var(--background)] p-4 border border-[var(--border-dim)] rounded-xl flex items-start justify-between">
+                                                <div>
+                                                    <h3 className="text-sm font-medium text-[var(--foreground)] mb-1">Track Order</h3>
+                                                    <p className="text-xs text-[var(--text-dim)]">Public order tracking.</p>
+                                                </div>
+                                                <button onClick={() => setSFeatures({ ...sFeatures, trackOrder: !sFeatures.trackOrder })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.trackOrder ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sFeatures.trackOrder ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                                </button>
+                                            </div>
+                                            <div className="bg-[var(--background)] p-4 border border-[var(--border-dim)] rounded-xl flex items-start justify-between">
+                                                <div>
+                                                    <h3 className="text-sm font-medium text-[var(--foreground)] mb-1">Reviews</h3>
+                                                    <p className="text-xs text-[var(--text-dim)]">Enable 5-star reviews.</p>
+                                                </div>
+                                                <button onClick={() => setSFeatures({ ...sFeatures, productReviews: !sFeatures.productReviews })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.productReviews ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sFeatures.productReviews ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                                </button>
+                                            </div>
+                                            <div className="bg-[var(--background)] p-4 border border-[var(--border-dim)] rounded-xl flex flex-col justify-between h-full md:col-span-2">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <h3 className="text-sm font-medium text-[var(--foreground)] mb-1">Related Products</h3>
+                                                        <p className="text-xs text-[var(--text-dim)]">Show items at bottom.</p>
+                                                    </div>
+                                                    <button onClick={() => setSFeatures({ ...sFeatures, relatedProducts: !sFeatures.relatedProducts })} className={`relative w-12 h-6 flex-shrink-0 rounded-full transition-colors ${sFeatures.relatedProducts ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                                        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sFeatures.relatedProducts ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => saveSetting('features', sFeatures)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50 mb-2">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Features</button>
+                                    </div>
+
+                                    {/* ═══ STORE BRANDING ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Store className="w-5 h-5 text-violet-500" /> Store Branding</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                            <div className="md:col-span-2"><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Store Name</label><input type="text" value={sBranding.storeName} onChange={e => setSBranding({ ...sBranding, storeName: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div className="md:col-span-2"><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Store Tagline</label><input type="text" value={sBranding.storeTagline} onChange={e => setSBranding({ ...sBranding, storeTagline: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Logo URL</label><input type="text" value={sBranding.logoUrl} onChange={e => setSBranding({ ...sBranding, logoUrl: e.target.value })} placeholder="https://..." className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Favicon URL</label><input type="text" value={sBranding.faviconUrl} onChange={e => setSBranding({ ...sBranding, faviconUrl: e.target.value })} placeholder="https://..." className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Store Initial</label><input type="text" maxLength={2} value={sBranding.storeInitial} onChange={e => setSBranding({ ...sBranding, storeInitial: e.target.value })} className="w-20 rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            {sBranding.logoUrl && <div className="p-3 bg-[var(--background)] border border-[var(--border-dim)] rounded-xl flex items-center justify-center"><img src={sBranding.logoUrl} alt="Logo" className="h-10 object-contain" /></div>}
+                                        </div>
+                                        <button onClick={() => saveSetting('storeBranding', sBranding)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Branding</button>
+                                    </div>
+
+                                    {/* ═══ CONTACT INFO ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Phone className="w-5 h-5 text-emerald-500" /> Contact Info</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Phone Number</label><input type="text" value={sContact.phone} onChange={e => setSContact({ ...sContact, phone: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Email</label><input type="email" value={sContact.email} onChange={e => setSContact({ ...sContact, email: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Address</label><textarea value={sContact.address} onChange={e => setSContact({ ...sContact, address: e.target.value })} rows={2} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none" /></div>
+                                        </div>
+                                        <button onClick={() => saveSetting('contactInfo', sContact)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Contact</button>
+                                    </div>
+
+                                    {/* ═══ SOCIAL LINKS ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Globe className="w-5 h-5 text-blue-500" /> Social Links</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block flex items-center gap-1"><Facebook className="w-3.5 h-3.5" /> Facebook</label><input type="text" value={sSocial.facebook} onChange={e => setSSocial({ ...sSocial, facebook: e.target.value })} placeholder="URL" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block flex items-center gap-1"><Instagram className="w-3.5 h-3.5" /> Instagram</label><input type="text" value={sSocial.instagram} onChange={e => setSSocial({ ...sSocial, instagram: e.target.value })} placeholder="URL" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</label><input type="text" value={sSocial.whatsapp} onChange={e => setSSocial({ ...sSocial, whatsapp: e.target.value })} placeholder="Number" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block flex items-center gap-1"><Youtube className="w-3.5 h-3.5" /> YouTube</label><input type="text" value={sSocial.youtube} onChange={e => setSSocial({ ...sSocial, youtube: e.target.value })} placeholder="URL" className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                        </div>
+                                        <button onClick={() => saveSetting('socialLinks', sSocial)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Social</button>
+                                    </div>
+
+                                    {/* ═══ HERO SECTION ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Layout className="w-5 h-5 text-pink-500" /> Homepage Hero</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div className="flex items-center gap-3">
+                                                <button onClick={() => setSHero({ ...sHero, showNewArrivals: !sHero.showNewArrivals })} className={`relative w-12 h-6 rounded-full transition-colors ${sHero.showNewArrivals ? 'bg-primary' : 'bg-[var(--border-dim)]'}`}>
+                                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${sHero.showNewArrivals ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                                                </button>
+                                                <label className="text-sm font-medium text-[var(--text-muted)]">Show New Arrivals Badge</label>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Badge Text</label><input type="text" value={sHero.badge} onChange={e => setSHero({ ...sHero, badge: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                                <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Title</label><input type="text" value={sHero.title} onChange={e => setSHero({ ...sHero, title: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            </div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Title Highlight</label><input type="text" value={sHero.titleHighlight} onChange={e => setSHero({ ...sHero, titleHighlight: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Description</label><textarea value={sHero.description} onChange={e => setSHero({ ...sHero, description: e.target.value })} rows={2} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none" /></div>
+                                        </div>
+                                        <button onClick={() => saveSetting('heroContent', sHero)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Hero</button>
+                                    </div>
+
+                                    {/* ═══ FOOTER CONTENT ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><FileText className="w-5 h-5 text-cyan-500" /> Footer Content</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Copyright Text ({'{year}'})</label><input type="text" value={sFooter.copyrightText} onChange={e => setSFooter({ ...sFooter, copyrightText: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div>
+                                                <label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Payment Methods (csv)</label>
+                                                <input type="text" value={sFooter.paymentMethods.join(', ')} onChange={e => setSFooter({ ...sFooter, paymentMethods: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" placeholder="Cash on Delivery" />
+                                            </div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Footer Description</label><textarea value={sFooter.description} onChange={e => setSFooter({ ...sFooter, description: e.target.value })} rows={3} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none" /></div>
+                                        </div>
+                                        <button onClick={() => saveSetting('footerContent', sFooter)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Footer</button>
+                                    </div>
+
+                                    {/* ═══ SEO SETTINGS ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Globe className="w-5 h-5 text-emerald-500" /> SEO Tracking & Config</h2>
+                                        <div className="space-y-4 mb-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Site Title</label><input type="text" value={sSeo.siteTitle} onChange={e => setSSeo({ ...sSeo, siteTitle: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                                <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Site URL</label><input type="text" value={sSeo.siteUrl} onChange={e => setSSeo({ ...sSeo, siteUrl: e.target.value })} placeholder="https://..." className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            </div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Keywords</label><input type="text" value={sSeo.keywords} onChange={e => setSSeo({ ...sSeo, keywords: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">OG Image URL</label><input type="text" value={sSeo.ogImage} onChange={e => setSSeo({ ...sSeo, ogImage: e.target.value })} placeholder="https://..." className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Meta Description</label><textarea value={sSeo.metaDescription} onChange={e => setSSeo({ ...sSeo, metaDescription: e.target.value })} rows={3} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none" /></div>
+                                        </div>
+                                        <button onClick={() => saveSetting('seo', sSeo)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save SEO</button>
+                                    </div>
+
+                                    {/* ═══ APPEARANCE ═══ */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] p-6 sm:p-8">
+                                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-[var(--foreground)]"><Palette className="w-5 h-5 text-orange-500" /> Appearance</h2>
+                                        <div className="mb-6">
+                                            <label className="text-sm font-medium text-[var(--text-muted)] mb-3 block">Products Per Row (Desktop)</label>
+                                            <div className="grid grid-cols-3 gap-2 border border-[var(--border-dim)] bg-[var(--background)] rounded-xl p-1">
+                                                {[3, 4, 5].map(n => (
+                                                    <button key={n} onClick={() => setSAppearance({ ...sAppearance, productsPerRow: n })} className={`p-2 rounded-lg text-sm font-medium transition-all ${sAppearance.productsPerRow === n ? 'bg-primary text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-dim)]/50'}`}>{n} cols</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => saveSetting('appearance', sAppearance)} disabled={sLoading} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">{sLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Save Appearance</button>
+                                    </div>
+
+                                </div>
+
+                                {/* Sticky Save Bar */}
+                                <div className="sticky bottom-0 left-0 right-0 p-4 bg-[var(--bg-card)]/80 backdrop-blur-md border-t border-[var(--border-dim)] mt-8 -mx-4 sm:-mx-6 lg:-mx-8 z-30 flex justify-center">
+                                    <button
+                                        onClick={saveAllSettings}
+                                        disabled={sLoading}
+                                        className="bg-primary text-white px-10 py-4 rounded-full font-bold shadow-xl shadow-primary/20 flex items-center gap-3 hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none ring-4 ring-primary/10"
+                                    >
+                                        {sLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Settings className="w-6 h-6" />}
+                                        <span className="text-lg">Save All Changes</span>
+                                    </button>
+                                </div>
+                            </>
+                        )
+                    }
+
+                    {/* ═══ OMS (Order Management — Pathao) ═══ */}
+                    {
+                        tab === "oms" && (() => {
+                            // Fetch OMS orders on tab open
+                            const fetchOmsOrders = async () => {
+                                setOmsLoading(true);
+                                try { const res = await fetch('/api/orders'); if (res.ok) { const data = await res.json(); setOmsOrders(data.orders || data); } } catch (err) { console.error(err); }
+                                finally { setOmsLoading(false); }
+                            };
+                            if (omsOrders.length === 0 && !omsLoading) fetchOmsOrders();
+
+                            const openOmsModal = (order: any) => {
+                                const totalQty = order.products?.reduce((s: number, p: any) => s + (p.quantity || 1), 0) || 1;
+                                const desc = order.products?.map((p: any) => `${p.name} x${p.quantity}`).join(', ') || `Order #${order.orderNumber}`;
+                                const amount = order.paymentMethod === 'cod' ? order.totalAmount : 0;
+                                setOmsModalData({ itemWeight: 0.5, deliveryType: 48, specialInstruction: `Order #${order.orderNumber} | Payment: ${(order.paymentMethod || 'cod').toUpperCase()}`, itemDescription: desc, amountToCollect: amount, itemQuantity: totalQty });
+                                setOmsModalOrder(order);
+                            };
+
+                            const handleOmsSubmit = async () => {
+                                if (!omsModalOrder) return;
+                                setOmsProcessingId(omsModalOrder._id);
+                                setOmsModalOrder(null);
+                                try {
+                                    const result = await sendOrderToPathao(omsModalOrder._id, omsModalData);
+                                    if (result?.success) {
+                                        showToast('success', `✅ Sent! CN: ${result.consignmentId}${result.deliveryFee ? ` | Fee: ৳${result.deliveryFee}` : ''}`);
+                                        setOmsOrders(prev => prev.map(o => o._id === omsModalOrder._id ? { ...o, status: 'confirmed', consignmentId: result.consignmentId, pathaoStatus: 'Pickup_Pending' } : o));
+                                    } else { showToast('error', `❌ ${result?.error}`); }
+                                } catch (err: any) { showToast('error', `❌ ${err.message}`); }
+                                finally { setOmsProcessingId(null); }
+                            };
+
+                            const omsStatusStyles: Record<string, string> = {
+                                pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+                                confirmed: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+                                shipped: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+                                delivered: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+                            };
+
+                            return (
+                                <div className="space-y-6">
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl font-semibold flex items-center gap-2 text-[var(--foreground)]"><Truck className="w-5 h-5 text-violet-500" /> Pathao Courier — OMS</h2>
+                                        <button onClick={() => { setOmsOrders([]); }} className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-lg hover:bg-[var(--background)] transition-colors text-sm text-[var(--text-muted)]">
+                                            <RefreshCw className="w-4 h-4" /> Refresh
+                                        </button>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
+                                                <thead className="border-b border-[var(--border-dim)] bg-[var(--background)]">
+                                                    <tr>
+                                                        <th className="px-6 py-4 text-[var(--text-muted)] font-medium">Order</th>
+                                                        <th className="px-6 py-4 text-[var(--text-muted)] font-medium">Customer</th>
+                                                        <th className="px-6 py-4 text-[var(--text-muted)] font-medium">Payment</th>
+                                                        <th className="px-6 py-4 text-[var(--text-muted)] font-medium">Status</th>
+                                                        <th className="px-6 py-4 text-[var(--text-muted)] font-medium">Amount</th>
+                                                        <th className="px-6 py-4 text-[var(--text-muted)] font-medium text-right">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-default-100">
+                                                    {omsLoading ? (
+                                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-[var(--text-dim)]"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" /><p>Loading orders...</p></td></tr>
+                                                    ) : omsOrders.length === 0 ? (
+                                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-[var(--text-dim)]"><Package className="w-10 h-10 mx-auto mb-2 opacity-40 text-[var(--text-dim)]/70" /><p>No orders found.</p></td></tr>
+                                                    ) : (
+                                                        omsOrders.map((order: any) => (
+                                                            <React.Fragment key={order._id}>
+                                                                <tr className={`transition-colors ${omsExpandedId === order._id ? 'bg-primary/5' : 'hover:bg-[var(--background)]'}`}>
+                                                                    <td className="px-6 py-4">
+                                                                        <span className="font-semibold text-[var(--foreground)]">#{order.orderNumber}</span>
+                                                                        <div className="text-xs text-[var(--text-dim)] mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="font-medium text-[var(--foreground)]">{order.customerName}</div>
+                                                                        <div className="text-xs text-[var(--text-dim)]">{order.customerPhone}</div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4"><span className="uppercase text-xs font-semibold tracking-wider text-[var(--text-dim)]">{order.paymentMethod || 'cod'}</span></td>
+                                                                    <td className="px-6 py-4">
+                                                                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${omsStatusStyles[order.status] || 'text-[var(--text-dim)] bg-[var(--border-dim)]/50 border-[var(--border-dim)]'}`}>{order.status}</span>
+                                                                        {order.consignmentId && <div className="text-[11px] text-[var(--text-dim)] mt-1 font-mono">CN: {order.consignmentId}</div>}
+                                                                        {order.consignmentId && (
+                                                                            <button onClick={() => setOmsExpandedId(omsExpandedId === order._id ? null : order._id)} className="text-[11px] text-primary hover:text-primary-600 mt-1 underline">
+                                                                                {omsExpandedId === order._id ? 'Hide Timeline' : 'View Timeline'}
+                                                                            </button>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-6 py-4 font-semibold text-[var(--foreground)]">৳{order.totalAmount}</td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        {!order.consignmentId ? (
+                                                                            <button onClick={() => openOmsModal(order)} disabled={omsProcessingId === order._id}
+                                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium rounded-lg transition-all border border-primary/20 disabled:opacity-50">
+                                                                                {omsProcessingId === order._id ? <><Loader2 className="w-4 h-4 animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to Pathao</>}
+                                                                            </button>
+                                                                        ) : (
+                                                                            <a href={`https://merchant.pathao.com/tracking?consignment_id=${order.consignmentId}&phone=${order.customerPhone}`} target="_blank" rel="noreferrer"
+                                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] hover:bg-[var(--background)] text-[var(--text-muted)] text-sm font-medium border border-[var(--border-dim)] rounded-lg transition-all">
+                                                                                Track Order
+                                                                            </a>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                                {omsExpandedId === order._id && order.consignmentId ? (() => {
+                                                                    const activeIdx = getTimelineIndex(order.pathaoStatus);
+                                                                    return (
+                                                                        <tr className="bg-[var(--background)] border-y border-[var(--border-dim)] shadow-inner">
+                                                                            <td colSpan={6} className="p-0">
+                                                                                <div className="p-6">
+                                                                                    <div className="flex items-center gap-2 mb-6">
+                                                                                        <Truck className="w-5 h-5 text-primary" />
+                                                                                        <h3 className="text-lg font-bold text-[var(--foreground)]">Delivery Timeline — #{order.orderNumber}</h3>
+                                                                                        <span className="ml-auto text-xs text-[var(--text-dim)] font-mono">CN: {order.consignmentId}</span>
+                                                                                    </div>
+                                                                                    <div className="flex items-center justify-between relative">
+                                                                                        <div className="absolute top-6 left-8 right-8 h-0.5 bg-[var(--border-dim)] z-0" />
+                                                                                        <div className="absolute top-6 left-8 h-0.5 bg-primary z-10 transition-all duration-500" style={{ width: `${(activeIdx / (TIMELINE_STEPS.length - 1)) * (100 - 10)}%` }} />
+                                                                                        {TIMELINE_STEPS.map((step, idx) => {
+                                                                                            const Icon = step.icon;
+                                                                                            const isCompleted = idx <= activeIdx;
+                                                                                            const isCurrent = idx === activeIdx;
+                                                                                            return (
+                                                                                                <div key={step.key} className="flex flex-col items-center relative z-20 flex-1">
+                                                                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all bg-[var(--bg-card)]
+                                                                                            ${isCurrent ? 'border-primary text-primary shadow-md shadow-primary/20' :
+                                                                                                            isCompleted ? 'border-emerald-500 text-emerald-500 shadow-sm' :
+                                                                                                                'border-[var(--border-dim)] text-[var(--text-dim)]/70'}`}>
+                                                                                                        <Icon className="w-5 h-5" />
+                                                                                                    </div>
+                                                                                                    <span className={`mt-2 text-xs font-semibold text-center ${isCurrent ? 'text-primary' : isCompleted ? 'text-emerald-500' : 'text-[var(--text-dim)]'}`}>{step.label}</span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })() : null}
+                                                            </React.Fragment>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* OMS Send Modal */}
+                                    {omsModalOrder && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                                            <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+                                                <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-dim)]">
+                                                    <div>
+                                                        <h3 className="text-lg font-bold text-[var(--foreground)]">Send to Pathao</h3>
+                                                        <p className="text-xs text-[var(--text-dim)]">Order #{omsModalOrder.orderNumber} — {omsModalOrder.customerName}</p>
+                                                    </div>
+                                                    <button onClick={() => setOmsModalOrder(null)} className="p-1.5 rounded-lg hover:bg-[var(--border-dim)]/50 text-[var(--text-dim)]/70 hover:text-[var(--text-muted)] transition-colors"><X className="w-5 h-5" /></button>
+                                                </div>
+                                                <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">Delivery Type</label>
+                                                        <select value={omsModalData.deliveryType} onChange={e => setOmsModalData({ ...omsModalData, deliveryType: Number(e.target.value) })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                                                            <option value={48}>Normal Delivery</option>
+                                                            <option value={12}>On-Demand Delivery</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">Total Weight (kg)</label>
+                                                            <select value={omsModalData.itemWeight} onChange={e => setOmsModalData({ ...omsModalData, itemWeight: parseFloat(e.target.value) || 0.5 })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                                                                <option value={0.2}>0-0.2</option>
+                                                                <option value={0.5}>0.2-0.5</option>
+                                                                <option value={1}>0.5-1</option>
+                                                                <option value={1.5}>1-1.5</option>
+                                                                <option value={2}>1.5-2</option>
+                                                                <option value={3}>2-3</option>
+                                                                <option value={4}>3-4</option>
+                                                                <option value={5}>4-5</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">Quantity</label>
+                                                            <input type="number" min="1" value={omsModalData.itemQuantity} onChange={e => {
+                                                                const newQty = parseInt(e.target.value) || 1;
+                                                                const baseAmount = omsModalOrder.paymentMethod === 'cod' ? (omsModalOrder.totalAmount / (omsModalData.itemQuantity || 1)) : 0;
+                                                                setOmsModalData({ ...omsModalData, itemQuantity: newQty, amountToCollect: baseAmount * newQty });
+                                                            }} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">Amount to Collect (৳)</label>
+                                                        <input type="number" min="0" value={omsModalData.amountToCollect} onChange={e => setOmsModalData({ ...omsModalData, amountToCollect: parseFloat(e.target.value) || 0 })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                                        <p className="text-xs text-[var(--text-dim)] mt-1">{(omsModalOrder.paymentMethod || 'cod') === 'cod' ? 'COD — customer pays on delivery' : 'Prepaid — already paid'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">Item Description & Price</label>
+                                                        <input type="text" value={omsModalData.itemDescription} onChange={e => setOmsModalData({ ...omsModalData, itemDescription: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">Special Instructions</label>
+                                                        <textarea rows={3} value={omsModalData.specialInstruction} onChange={e => setOmsModalData({ ...omsModalData, specialInstruction: e.target.value })} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none" placeholder="e.g. Handle with care, fragile..." />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-dim)] bg-[var(--background)]">
+                                                    <button onClick={() => setOmsModalOrder(null)} className="px-4 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-dim)] font-medium text-[var(--text-muted)] hover:bg-[var(--background)] transition-colors">Cancel</button>
+                                                    <button onClick={handleOmsSubmit} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-600 focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                                                        <Send className="w-4 h-4" /> Send to Pathao
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()
+                    }
+
+                    {/* ═══ CUSTOMERS ═══ */}
+                    {tab === "customers" && (() => {
+                        const customersList = Object.values(orders.reduce((acc, o) => {
+                            if (!acc[o.customerPhone]) {
+                                acc[o.customerPhone] = { name: o.customerName, phone: o.customerPhone, address: o.customerAddress, orderCount: 0, totalSpent: 0, lastOrder: o.createdAt };
+                            }
+                            acc[o.customerPhone].orderCount += 1;
+                            acc[o.customerPhone].totalSpent += o.totalAmount;
+                            if (new Date(o.createdAt) > new Date(acc[o.customerPhone].lastOrder)) {
+                                acc[o.customerPhone].lastOrder = o.createdAt;
+                            }
+                            return acc;
+                        }, {} as Record<string, any>)).sort((a: any, b: any) => b.totalSpent - a.totalSpent);
+
+                        return (
+                            <div className="space-y-6 max-w-7xl mx-auto">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">Customers</h2>
+                                    <div className="flex gap-2">
+                                        <button className="flex items-center justify-center gap-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-dim)] px-4 py-2.5 text-sm font-medium text-[var(--text-muted)] transition-all hover:bg-[var(--background)] focus:outline-none focus:ring-2 focus:ring-primary/20"><Download className="w-4 h-4" /> Export CSV</button>
+                                    </div>
+                                </div>
+                                <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-dim)] shadow-sm overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm whitespace-nowrap">
+                                            <thead className="bg-[var(--background)] border-b border-[var(--border-dim)]">
+                                                <tr>
+                                                    <th className="px-6 py-4 font-semibold text-[var(--foreground)]">Name / Phone</th>
+                                                    <th className="px-6 py-4 font-semibold text-[var(--foreground)]">Address</th>
+                                                    <th className="px-6 py-4 font-semibold text-[var(--foreground)]" style={{ textAlign: "center" }}>Orders</th>
+                                                    <th className="px-6 py-4 font-semibold text-[var(--foreground)]" style={{ textAlign: "right" }}>Total Spent</th>
+                                                    <th className="px-6 py-4 font-semibold text-[var(--foreground)]" style={{ textAlign: "right" }}>Last Order</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-default-100">
+                                                {customersList.map((c: any, i) => (
+                                                    <tr key={i} className="hover:bg-[var(--background)] transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="font-semibold text-[var(--foreground)]">{c.name}</div>
+                                                            <div className="text-xs text-[var(--text-dim)] mt-1 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" />{c.phone}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-[var(--text-muted)] max-w-xs truncate">{c.address}</td>
+                                                        <td className="px-6 py-4 font-medium text-[var(--foreground)]" style={{ textAlign: "center" }}>{c.orderCount}</td>
+                                                        <td className="px-6 py-4 font-semibold text-[var(--foreground)]" style={{ textAlign: "right" }}>৳{c.totalSpent.toLocaleString()}</td>
+                                                        <td className="px-6 py-4 text-[var(--text-dim)]" style={{ textAlign: "right" }}>{new Date(c.lastOrder).toLocaleDateString()}</td>
+                                                    </tr>
+                                                ))}
+                                                {customersList.length === 0 && (
+                                                    <tr><td colSpan={5} className="px-6 py-12 text-center text-[var(--text-dim)]">No customers found based on current orders.</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+
+                    {
+                        editP && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+                                <div className="bg-[var(--bg-card)] border border-[var(--border-dim)] rounded-2xl p-8 max-w-lg w-full shadow-xl relative my-8">
+                                    <button onClick={() => setEditP(null)} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-[var(--border-dim)]/50 text-[var(--text-dim)]/70 hover:text-[var(--text-muted)] transition-colors"><X className="w-5 h-5" /></button>
+                                    <h2 className="text-xl font-bold text-[var(--foreground)] mb-6 flex items-center gap-2"><Edit3 className="w-5 h-5 text-primary" /> Edit Product</h2>
+                                    <div className="space-y-4">
+                                        <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Name</label><input type="text" value={eName} onChange={e => setEName(e.target.value)} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Price (৳)</label><input type="number" value={ePrice} onChange={e => setEPrice(e.target.value)} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                            <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Stock</label><input type="number" value={eStock} onChange={e => setEStock(e.target.value)} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                        </div>
+                                        <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Category</label><input type="text" value={eCat} onChange={e => setECat(e.target.value)} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                        <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Description</label><textarea value={eDesc} onChange={e => setEDesc(e.target.value)} rows={3} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none" /></div>
+                                        {/* Image Management */}
+                                        <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Images</label>
+                                            <div className="grid grid-cols-4 gap-2 mb-2">{eImages.map((url, i) => (
+                                                <div key={i} className="relative group"><img src={url} alt="" className="w-full h-20 object-cover rounded-lg border border-[var(--border-dim)]" />
+                                                    <button onClick={() => removeEditImage(i)} className="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
+                                                </div>
+                                            ))}</div>
+                                            <button type="button" onClick={() => editFileRef.current?.click()} className="text-sm text-primary hover:text-primary-600 font-medium flex items-center gap-1"><Plus className="w-4 h-4" />Add Images</button>
+                                            <input ref={editFileRef} type="file" accept="image/*" multiple onChange={addEditImages} className="hidden" />
+                                        </div>
+                                        <div><label className="text-sm font-medium text-[var(--text-muted)] mb-1 block">Video URL</label><input type="text" value={eVideo} onChange={e => setEVideo(e.target.value)} className="w-full rounded-lg border border-[var(--border-dim)] bg-[var(--bg-card)] px-4 py-2 text-sm text-[var(--foreground)] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none" /></div>
+                                        <DescriptionSectionEditor sections={eDescriptionSections} setSections={setEDescriptionSections} />
+                                        <VariantEditor variants={eVariants} setVariants={setEVariants} />
+                                        <button onClick={saveEdit} className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-primary-600 mt-4"><CheckCircle className="w-5 h-5" /> Save Changes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    }
+                </main>
+            </div>
+        </div>
     );
 }

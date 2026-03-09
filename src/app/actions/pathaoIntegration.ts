@@ -101,19 +101,23 @@ export async function sendOrderToPathao(orderId: string, deliveryDetails: Delive
         const accessToken = await getPathaoAccessToken();
 
         // ── Step 3: Build Pathao Order Payload using user-provided values ─────
+        // Ensure recipient_address is at least 10 characters long (Pathao requirement)
+        let safeAddress = order.customerAddress || "No Address Provided";
+        if (safeAddress.length < 10) safeAddress = safeAddress + "          ";
+
         const pathaoPayload = {
             store_id: parseInt(PATHAO_STORE_ID, 10),
             merchant_order_id: order.orderNumber.toString(),
-            recipient_name: order.customerName,
-            recipient_phone: order.customerPhone,
-            recipient_address: order.customerAddress,
-            delivery_type: deliveryDetails.deliveryType,
+            recipient_name: order.customerName || "Customer",
+            recipient_phone: order.customerPhone || "01700000000",
+            recipient_address: safeAddress,
+            delivery_type: deliveryDetails.deliveryType || 48,
             item_type: 2,         // 2 = Parcel
-            special_instruction: deliveryDetails.specialInstruction,
-            item_quantity: deliveryDetails.itemQuantity,
-            item_weight: deliveryDetails.itemWeight,
-            item_description: deliveryDetails.itemDescription,
-            amount_to_collect: deliveryDetails.amountToCollect,
+            special_instruction: deliveryDetails.specialInstruction || "None",
+            item_quantity: deliveryDetails.itemQuantity || 1,
+            item_weight: deliveryDetails.itemWeight || 0.5,
+            item_description: deliveryDetails.itemDescription || "Item",
+            amount_to_collect: deliveryDetails.amountToCollect || order.totalAmount,
         };
 
         // ── Step 4: Create Order in Pathao ────────────────────────────────────

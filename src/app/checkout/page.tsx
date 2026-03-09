@@ -271,7 +271,7 @@ function CheckoutForm() {
                             <div className="pt-5 border-t border-gray-800">
                                 <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/40 shadow-sm shadow-emerald-500/5">
                                     <Truck className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                                    <span className="text-sm font-medium text-emerald-300">🚚 Free Home Delivery on all orders!</span>
+                                    <span className="text-sm font-medium text-emerald-300">📦 Free Home Delivery on all orders!</span>
                                 </div>
                             </div>
                         </div>
