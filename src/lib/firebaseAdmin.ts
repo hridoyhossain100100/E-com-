@@ -13,7 +13,7 @@ if (!admin.apps.length) {
         credential: admin.credential.cert({
           projectId,
           clientEmail,
-          privateKey: privateKey.replace(/\\n/g, '\n'),
+          privateKey: privateKey.replace(/\\n/g, '\n').replace(/\r/g, '').replace(/^"|"$/g, '').trim(),
         }),
       });
       console.log('Firebase Admin Initialized Successfully via Environment Variables');
