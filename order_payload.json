@@ -1,0 +1,14 @@
+﻿{
+    "products":  [
+                     {
+                         "productId":  "69a1946e4a39f2b6c47e7b24",
+                         "quantity":  1
+                     }
+                 ],
+    "shippingZone":  "Dhaka",
+    "customerPhone":  "01700000000",
+    "shippingCost":  60,
+    "paymentMethod":  "COD",
+    "customerAddress":  "Test Address, Dhaka",
+    "customerName":  "Antigravity Test"
+}

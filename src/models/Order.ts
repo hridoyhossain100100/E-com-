@@ -77,7 +77,7 @@ const orderSchema = new mongoose.Schema({
     }
 });
 // @database-optimizer: Add indexes for common query patterns
-orderSchema.index({ orderNumber: 1 }, { unique: true }); // Fast order lookup by number
+
 orderSchema.index({ customerPhone: 1 }); // Customer order history by phone
 orderSchema.index({ status: 1, createdAt: -1 }); // Admin filter by status + sort
 orderSchema.index({ createdAt: -1 }); // Sort by newest (admin dashboard)

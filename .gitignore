@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Firebase Service Account
+shopvibe-admin-firebase-adminsdk-fbsvc-ec9c8dd41f.json
+
+# Local scripts
+test_crypto_key.js
+getProductID.js
+extractDiag.js

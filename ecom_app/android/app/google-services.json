@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "638118335042",
+    "project_id": "shopvibe-admin",
+    "storage_bucket": "shopvibe-admin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638118335042:android:97443580966152f5d153db",
+        "android_client_info": {
+          "package_name": "com.example.ecom_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAl68F0vKn3h7LxSeEYqEEgR6ZKAFRL7oM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

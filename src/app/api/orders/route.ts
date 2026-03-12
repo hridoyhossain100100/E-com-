@@ -4,6 +4,7 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Coupon from '@/models/Coupon';
 import axios from 'axios';
+import { sendPushNotification } from '@/lib/pushNotification';
 
 // Atomic order number generation using findOneAndUpdate to prevent race conditions
 const generateOrderNumber = async () => {
@@ -178,6 +179,18 @@ ${productList}
                 console.error('Discord Webhook Failed:', webhookError);
                 // Do not fail the order if webhook fails
             }
+        }
+
+        // Send Push Notification to Admin App
+        try {
+            await sendPushNotification(
+                'New Order Received! 🚀',
+                `Order #${orderNumber} from ${customerName} for ৳${Number(finalTotal).toLocaleString()}`,
+                { orderId: savedOrder._id.toString(), type: 'new_order' }
+            );
+        } catch (notificationError) {
+            console.error('Push Notification Failed:', notificationError);
+            // Do not fail the order if notification fails
         }
 
         // Increment coupon usage if coupon was applied
