@@ -1,14 +1,15 @@
 import admin from './firebaseAdmin';
+import type { Message } from 'firebase-admin/messaging';
 
-export async function sendPushNotification(title: string, body: string, data?: any, token?: string) {
-  const message: any = {
+export async function sendPushNotification(title: string, body: string, data?: Record<string, string>, token?: string) {
+  const baseConfig = {
     notification: {
       title,
       body,
     },
     data: data || {},
     android: {
-      priority: 'high',
+      priority: 'high' as const,
       notification: {
         sound: 'order_alert',
         channelId: 'high_importance_channel',
@@ -16,11 +17,9 @@ export async function sendPushNotification(title: string, body: string, data?: a
     },
   };
 
-  if (token) {
-    message.token = token;
-  } else {
-    message.topic = 'admin_orders';
-  }
+  const message: Message = token
+    ? { ...baseConfig, token }
+    : { ...baseConfig, topic: 'admin_orders' };
 
   try {
     const response = await admin.messaging().send(message);

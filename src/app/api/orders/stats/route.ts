@@ -33,9 +33,9 @@ export async function GET() {
             latestOrders
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch dashboard stats', error: error?.message },
+            { message: 'Failed to fetch dashboard stats', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

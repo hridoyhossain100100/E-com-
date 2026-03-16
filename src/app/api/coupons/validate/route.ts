@@ -33,7 +33,7 @@ export async function POST(req: Request) {
             maxDiscount: coupon.maxDiscount
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Coupon validation error:', error);
         // @security-audit [sensitive-data-exposure]: Don't leak internal error details
         return NextResponse.json(

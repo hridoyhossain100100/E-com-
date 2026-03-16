@@ -30,9 +30,11 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading coupons: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading coupons: $e')));
+      }
       setState(() => _isLoading = false);
     }
   }
@@ -42,9 +44,11 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
       await _apiService.toggleCoupon(id);
       _loadCoupons();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error toggling coupon: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error toggling coupon: $e')));
+      }
     }
   }
 
@@ -72,9 +76,11 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
         await _apiService.deleteCoupon(id);
         _loadCoupons();
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting coupon: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting coupon: $e')));
+        }
       }
     }
   }
@@ -204,9 +210,11 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
                         'usageLimit': int.tryParse(limitController.text) ?? 0,
                         'expiresAt': selectedDate?.toIso8601String(),
                       });
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       _loadCoupons();
                     } catch (e) {
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -257,7 +265,7 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
                   Icon(
                     Icons.local_offer_outlined,
                     size: 64,
-                    color: Colors.grey.withOpacity(0.5),
+                    color: Colors.grey.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -289,10 +297,10 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E2E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -310,10 +318,10 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6D28D9).withOpacity(0.1),
+                    color: const Color(0xFF6D28D9).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: const Color(0xFF6D28D9).withOpacity(0.2),
+                      color: const Color(0xFF6D28D9).withValues(alpha: 0.2),
                     ),
                   ),
                   child: Text(
@@ -330,7 +338,7 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
                 Switch.adaptive(
                   value: coupon.isActive,
                   onChanged: (val) => _toggleCoupon(coupon.id),
-                  activeColor: const Color(0xFF6D28D9),
+                  activeTrackColor: const Color(0xFF6D28D9),
                 ),
               ],
             ),
@@ -385,7 +393,7 @@ class _AdminCouponListScreenState extends State<AdminCouponListScreen> {
               ),
             ),
           ),
-          Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(

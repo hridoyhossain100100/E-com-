@@ -78,7 +78,7 @@ export async function GTMNoScript() {
         if (setting?.value?.gtmId) {
             gtmId = setting.value.gtmId;
         }
-    } catch (e) {
+    } catch {
         // ignore
     }
 

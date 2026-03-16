@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Product from '@/models/Product';
 import mongoose from 'mongoose';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(
     req: Request,
@@ -31,31 +39,29 @@ export async function POST(
             return NextResponse.json({ message: 'No images provided' }, { status: 400 });
         }
 
-        const IMGBB_API_KEY = process.env.IMGBB_API_KEY;
-        if (!IMGBB_API_KEY) {
-            return NextResponse.json({ message: 'ImgBB API key is missing' }, { status: 500 });
-        }
-
-        // Upload new images to ImgBB
+        // Upload new images to Cloudinary
         const newUrls: string[] = [];
         for (const file of images) {
-            const buffer = await file.arrayBuffer();
-            const base64Image = Buffer.from(buffer).toString('base64');
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
 
-            const imgbbFormData = new FormData();
-            imgbbFormData.append('key', IMGBB_API_KEY);
-            imgbbFormData.append('image', base64Image);
-
-            const res = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: imgbbFormData
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const uploadResult = await new Promise<any>((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    { folder: 'shopvibe_products' },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                uploadStream.end(buffer);
             });
-            const data = await res.json();
 
-            if (data && data.data && data.data.display_url) {
-                newUrls.push(data.data.display_url);
+            if (uploadResult && uploadResult.secure_url) {
+                newUrls.push(uploadResult.secure_url);
             } else {
-                return NextResponse.json({ message: 'Failed to upload image' }, { status: 500 });
+                console.error("Cloudinary Upload Failed:", uploadResult);
+                return NextResponse.json({ message: 'Failed to upload image to Cloudinary' }, { status: 500 });
             }
         }
 
@@ -64,10 +70,10 @@ export async function POST(
 
         return NextResponse.json(product);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to add images:', error);
         return NextResponse.json(
-            { message: 'Internal Server Error', error: error?.message },
+            { message: 'Internal Server Error', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

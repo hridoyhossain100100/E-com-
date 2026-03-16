@@ -27,9 +27,9 @@ export async function DELETE(
 
         return NextResponse.json({ message: 'Coupon deleted' });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to delete coupon', error: error?.message },
+            { message: 'Failed to delete coupon', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

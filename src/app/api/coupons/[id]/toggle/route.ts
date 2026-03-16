@@ -30,9 +30,9 @@ export async function PUT(
 
         return NextResponse.json(coupon);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to toggle coupon status', error: error?.message },
+            { message: 'Failed to toggle coupon status', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

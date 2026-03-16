@@ -1,34 +1,33 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import axios from "axios";
+import Image from "next/image";
 import { Sun, Moon, Heart, ShoppingCart, PackageSearch, Menu, X } from "lucide-react";
+import { useCartStore } from "@/lib/cartStore";
 
-export default function Navbar({ initialSettings }: { initialSettings?: any }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function Navbar({ initialSettings }: { initialSettings?: Record<string, any> }) {
     const [dark, setDark] = useState(true);
     const [wishCount, setWishCount] = useState(0);
-    const [cartCount, setCartCount] = useState(0);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [marquee, setMarquee] = useState<{ text: string; enabled: boolean; speed?: number; bgColor?: string } | null>(initialSettings?.marquee || null);
-    const [branding, setBranding] = useState<{ storeName: string; storeInitial: string; logoUrl: string } | null>(initialSettings?.storeBranding || null);
+    const cartCount = useCartStore((state) => state.totalItems);
+    
+    const marquee = initialSettings?.marquee as { text: string; enabled: boolean; speed?: number; bgColor?: string } | null ?? null;
+    const branding = initialSettings?.storeBranding as { storeName: string; storeInitial: string; logoUrl: string } | null ?? null;
 
     useEffect(() => {
         // Theme initialization
         const isDark = document.documentElement.classList.contains("dark");
-        setDark(isDark);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDark(() => isDark);
 
         // Wishlist count
         const wl = JSON.parse(localStorage.getItem("wishlist") || "[]");
         setWishCount(wl.length);
-        // Cart count
-        const ct = JSON.parse(localStorage.getItem("cart") || "[]");
-        setCartCount(ct.length);
 
         const handler = () => { const w = JSON.parse(localStorage.getItem("wishlist") || "[]"); setWishCount(w.length); };
-        const cartHandler = () => { const c = JSON.parse(localStorage.getItem("cart") || "[]"); setCartCount(c.length); };
         window.addEventListener("wishlist-updated", handler);
-        window.addEventListener("cart-updated", cartHandler);
-        return () => { window.removeEventListener("wishlist-updated", handler); window.removeEventListener("cart-updated", cartHandler); };
+        return () => { window.removeEventListener("wishlist-updated", handler); };
     }, []);
 
     const toggleTheme = () => {
@@ -50,7 +49,7 @@ export default function Navbar({ initialSettings }: { initialSettings?: any }) {
                     <div className="flex justify-between items-center h-16">
                         <Link href="/" className="flex items-center gap-2">
                             {branding?.logoUrl ? (
-                                <img src={branding.logoUrl} alt={branding.storeName || 'Store'} className="h-8 object-contain" />
+                                <Image src={branding.logoUrl} alt={branding.storeName || 'Store'} width={160} height={32} className="h-8 w-auto object-contain" />
                             ) : (
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-sm font-bold text-white">{branding?.storeInitial || 'S'}</div>
                             )}

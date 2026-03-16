@@ -223,7 +223,7 @@ class _AdminOmsScreenState extends State<AdminOmsScreen> with SingleTickerProvid
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: primaryColor.withOpacity(0.1),
+                        backgroundColor: primaryColor.withValues(alpha: 0.1),
                         child: Text(
                           order.customerName.isNotEmpty ? order.customerName[0].toUpperCase() : '?',
                           style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
@@ -252,8 +252,8 @@ class _AdminOmsScreenState extends State<AdminOmsScreen> with SingleTickerProvid
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
-                  border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+                  color: Colors.blue.withValues(alpha: 0.05),
+                  border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
                 ),
                 child: Row(
                   children: [
@@ -281,7 +281,7 @@ class _AdminOmsScreenState extends State<AdminOmsScreen> with SingleTickerProvid
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+                  border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
                 ),
                 child: Row(
                   children: [
@@ -329,9 +329,9 @@ class _AdminOmsScreenState extends State<AdminOmsScreen> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Text(
         status.toUpperCase(),

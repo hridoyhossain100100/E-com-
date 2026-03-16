@@ -1,0 +1,114 @@
+﻿node.exe : ΓÜá turbopack.root 
+should be absolute, using: 
+C:\SCR\e-com site
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : NotS 
+   pecified: (ΓÜá turbopack.r...\  
+  SCR\e-com site:String) [], Rem   
+ oteException
+    + FullyQualifiedErrorId : Nati 
+   veCommandError
+ 
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  Γ£ô optimizeCss
+  ┬╖ optimizePackageImports
+
+ΓÜá The "middleware" file 
+convention is deprecated. Please 
+use "proxy" instead. Learn more: ht
+tps://nextjs.org/docs/messages/midd
+leware-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 5.0s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+Firebase Admin Initialized Successfully via Environment Variables
+Firebase Admin Initialized Successfully via Environment Variables
+  Generating static pages using 11 workers (0/30) ...
+Firebase Admin Initialized Successfully via Environment Variables
+  Generating static pages using 11 workers (7/30) 
+  Generating static pages using 11 workers (14/30) 
+(node:20716) [MONGOOSE] Warning: 
+mongoose: Duplicate schema index 
+on {"slug":1} for model "Product". 
+This is often due to declaring an 
+index using both "index: true" and 
+"schema.index()". Please remove 
+the duplicate index definition.
+(Use `node --trace-warnings ...` 
+to show where the warning was 
+created)
+(node:21144) [MONGOOSE] Warning: 
+mongoose: Duplicate schema index 
+on {"slug":1} for model "Product". 
+This is often due to declaring an 
+index using both "index: true" and 
+"schema.index()". Please remove 
+the duplicate index definition.
+(Use `node --trace-warnings ...` 
+to show where the warning was 
+created)
+  Generating static pages using 11 workers (22/30) 
+Γ£ô Generating static pages using 11 workers (30/30) in 1783.3ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /admin
+Γö£ ╞Æ /api/admin/check
+Γö£ ╞Æ /api/admin/login
+Γö£ ╞Æ /api/admin/logout
+Γö£ ╞Æ /api/admin/reviews
+Γö£ ╞Æ /api/admin/reviews/[id]
+Γö£ ╞Æ /api/admin/save-token
+Γö£ ╞Æ /api/analytics/by-category
+Γö£ ╞Æ /api/analytics/completion-rate
+Γö£ ╞Æ /api/analytics/repeat-customers
+Γö£ ╞Æ /api/coupons
+Γö£ ╞Æ /api/coupons/[id]
+Γö£ ╞Æ /api/coupons/[id]/toggle
+Γö£ ╞Æ /api/coupons/validate
+Γö£ ╞Æ /api/invoice/[orderId]
+Γö£ ╞Æ /api/orders
+Γö£ ╞Æ /api/orders/[id]/pathao
+Γö£ ╞Æ /api/orders/[id]/status
+Γö£ ╞Æ /api/orders/daily-revenue
+Γö£ ╞Æ /api/orders/draft
+Γö£ ╞Æ /api/orders/export-csv
+Γö£ ╞Æ /api/orders/stats
+Γö£ ╞Æ /api/orders/track
+Γö£ ╞Æ /api/products
+Γö£ ╞Æ /api/products/[id]
+Γö£ ╞Æ /api/products/[id]/images
+Γö£ ╞Æ /api/products/bulk-delete
+Γö£ ╞Æ /api/reviews/[productId]
+Γö£ ╞Æ /api/settings
+Γö£ ╞Æ /api/settings/[key]
+Γö£ ╞Æ /api/shipping
+Γö£ ╞Æ /api/test-connection
+Γö£ ╞Æ /api/test-notification
+Γö£ ╞Æ /api/track/pathao
+Γö£ ╞Æ /api/visitors/count
+Γö£ ╞Æ /api/visitors/ping
+Γö£ ╞Æ /api/webhooks/pathao
+Γö£ Γùï /checkout
+Γö£ ╞Æ /product/[id]
+Γö£ Γùï /track
+Γö£ Γùï /track/pathao
+Γöö Γùï /wishlist
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

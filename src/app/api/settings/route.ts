@@ -4,6 +4,7 @@ import Settings from '@/models/Settings';
 
 export const dynamic = 'force-dynamic';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DEFAULTS: Record<string, any> = {
     shippingZones: [
         { id: 'dhaka', label: 'Inside Dhaka', cost: 60 },
@@ -83,9 +84,9 @@ export async function GET() {
 
         return NextResponse.json(result);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch settings', error: error?.message },
+            { message: 'Failed to fetch settings', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

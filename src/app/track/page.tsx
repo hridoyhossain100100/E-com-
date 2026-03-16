@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { Search, Truck, CheckCircle, PackageOpen, Loader2 } from "lucide-react";
+import { Search, Truck, CheckCircle, PackageOpen, Loader2, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const STATUS_STEPS = ["pending", "confirmed", "shipped", "delivered"];
 
 export default function TrackOrderPage() {
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
-    const [orders, setOrders] = useState<any[] | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [orders, setOrders] = useState<Record<string, any>[] | null>(null);
     const [error, setError] = useState("");
 
     const handleSearch = async (e: React.FormEvent) => {
@@ -23,8 +25,9 @@ export default function TrackOrderPage() {
         try {
             const res = await axios.get(`/api/orders/track?query=${encodeURIComponent(query.trim())}`);
             setOrders(res.data);
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Something went wrong.");
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Something went wrong.");
         } finally {
             setLoading(false);
         }
@@ -61,13 +64,27 @@ export default function TrackOrderPage() {
                         </button>
                     </form>
                     {error && <div className="text-red-400 bg-red-500/10 p-3 rounded-xl mt-4 max-w-md mx-auto text-sm">{error}</div>}
+                    
+                    {/* Pathao Link */}
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20 max-w-md mx-auto">
+                        <div className="flex items-center gap-3">
+                            <Truck className="w-5 h-5 text-violet-400" />
+                            <span className="text-sm font-medium text-violet-200">Shipped via Pathao Courier?</span>
+                        </div>
+                        <Link 
+                            href="/track/pathao" 
+                            className="w-full sm:w-auto px-4 py-2 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                        >
+                            Track Pathao Parcel <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Results */}
                 {orders && orders.length > 0 && (
                     <div className="space-y-6">
                         <h2 className="text-lg font-semibold text-gray-300">Found {orders.length} Order(s)</h2>
-                        {orders.map((order, idx) => {
+                        {orders.map((order) => {
                             const currentStep = getProgressIndex(order.status);
                             return (
                                 <div key={order._id} className="glass-card p-6 sm:p-8" style={{ transform: "none" }}>
@@ -115,7 +132,7 @@ export default function TrackOrderPage() {
                                     <div className="bg-white/5 rounded-xl p-4 mt-6">
                                         <p className="text-sm font-medium text-gray-400 mb-3">Items in this order:</p>
                                         <div className="flex flex-wrap gap-2">
-                                            {order.products.map((p: any, i: number) => (
+                                            {order.products.map((p: { quantity: number; name: string }, i: number) => (
                                                 <span key={i} className="text-sm px-3 py-1.5 bg-black/20 rounded-lg text-gray-300">
                                                     {p.quantity} × {p.name}
                                                 </span>
@@ -138,7 +155,7 @@ export default function TrackOrderPage() {
     );
 }
 
-function PackageSearchIcon(props: any) {
+function PackageSearchIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg
             {...props}

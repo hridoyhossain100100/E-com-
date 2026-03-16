@@ -18,8 +18,8 @@ if (!admin.apps.length) {
       });
       console.log('Firebase Admin Initialized Successfully via Environment Variables');
     }
-  } catch (error: any) {
-    console.error('Firebase Admin Initialization Error:', error.message);
+  } catch (error: unknown) {
+    console.error('Firebase Admin Initialization Error:', error instanceof Error ? error.message : error);
   }
 }
 

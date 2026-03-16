@@ -1,125 +1,67 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Heart, Share2, ShoppingBag, Sparkles, ArrowRight, Filter, X, Shield, Truck, CreditCard, ChevronUp, Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import { Search, ShoppingBag, Sparkles, Filter, X, Shield, ChevronUp, Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
 
 interface Product {
   _id: string; name: string; price: number; description: string;
-  imageUrls: string[]; category: string; stock: number; variants: any[]; createdAt: string;
+  imageUrls: string[]; category: string; stock: number; variants: unknown[]; createdAt: string;
 }
 
-// Skeleton Card
-function SkeletonCard() {
-  return (
-    <div className="glass-card overflow-hidden" style={{ transform: "none" }}>
-      <div className="skeleton h-48 sm:h-56 w-full" />
-      <div className="p-4 sm:p-5 space-y-3">
-        <div className="skeleton h-4 w-3/4" />
-        <div className="skeleton h-3 w-full" />
-        <div className="skeleton h-3 w-1/2" />
-        <div className="flex justify-between items-center">
-          <div className="skeleton h-6 w-20" />
-          <div className="skeleton h-8 w-24 rounded-lg" />
-        </div>
-      </div>
-    </div>
-  );
+import ProductCard from "./components/ProductCard";
+import SkeletonCard from "./components/SkeletonCard";
+import { useCartStore } from "@/lib/cartStore";
+
+export interface CartItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  imageUrl: string;
 }
 
-interface ProductCardProps {
-  product: Product;
-  isWishlisted: boolean;
-  onWishlist: (id: string) => void;
-  onShare: (product: Product) => void;
-  onAddToCart: (product: Product) => void;
-  isNewArrival?: boolean;
-  animationDelay?: string;
+interface FooterLink {
+  label: string;
+  href: string;
 }
 
-function ProductCard({ product: p, isWishlisted, onWishlist, onShare, onAddToCart, isNewArrival, animationDelay }: ProductCardProps) {
-  return (
-    <div className="glass-card overflow-hidden group animate-fade-in-up cursor-pointer" style={{ animationDelay }}>
-      <div className="relative overflow-hidden w-full h-48 sm:h-56">
-        <Link href={`/product/${p._id}`}>
-          <Image src={p.imageUrls?.[0] || ""} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes={isNewArrival ? "(max-width: 768px) 50vw, 25vw" : "(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"} priority={isNewArrival} />
-        </Link>
-        {/* Wishlist + Share buttons */}
-        <div className="absolute top-2 right-2 flex gap-1.5">
-          <button onClick={(e) => { e.preventDefault(); onWishlist(p._id); }} className={`p-2 rounded-full backdrop-blur-sm transition-all ${isWishlisted ? "bg-pink-500 text-white" : "bg-black/40 text-white hover:bg-pink-500/80"}`}>
-            <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
-          </button>
-          <button onClick={(e) => { e.preventDefault(); onShare(p); }} className="p-2 rounded-full bg-black/40 text-white hover:bg-violet-500/80 backdrop-blur-sm transition-all">
-            <Share2 className="w-4 h-4" />
-          </button>
-        </div>
-        {/* Badges */}
-        {isNewArrival ? (
-          <span className="absolute top-2 left-2 px-2 py-0.5 bg-fuchsia-500 text-white text-[10px] font-bold rounded-full uppercase shadow-md shadow-fuchsia-500/20">New</span>
-        ) : (
-          <>
-            {(p.stock || 0) === 0 && <span className="absolute top-2 left-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full">Out of Stock</span>}
-            {p.category && p.category !== "General" && (p.stock || 0) > 0 && <span className="absolute top-2 left-2 px-2 py-0.5 bg-violet-500/80 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">{p.category}</span>}
-          </>
-        )}
-      </div>
-      <div className="p-4 sm:p-5 flex flex-col min-h-[140px] flex-1 justify-between">
-        <div>
-          <Link href={`/product/${p._id}`}>
-            <h3 className="font-semibold text-sm sm:text-base mb-1 truncate hover:text-primary transition-colors">{p.name}</h3>
-          </Link>
-          <p className="text-xs text-[var(--text-muted)] mb-3 line-clamp-2">{p.description}</p>
-        </div>
-        <div className="flex flex-col gap-3 mt-auto">
-          <span className="text-violet-400 font-bold text-lg leading-none">৳{p.price.toLocaleString()}</span>
-          <div className="flex gap-2">
-            {(p.stock || 0) > 0 ? (
-              <>
-                <button onClick={(e) => { e.preventDefault(); onAddToCart(p); }} className="flex-1 px-3 py-2 bg-transparent border border-primary text-primary hover:bg-primary/10 rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center">
-                  Add to Cart
-                </button>
-                <Link href={`/checkout?product=${p._id}&name=${encodeURIComponent(p.name)}&price=${p.price}`}
-                  className="flex-1 px-3 py-2 bg-primary hover:bg-primary/90 text-white rounded-md text-sm font-medium transition-colors text-center inline-flex items-center justify-center shadow-md shadow-primary/20">
-                  Buy Now
-                </Link>
-              </>
-            ) : (
-              <span className="w-full text-center px-3 py-1.5 bg-[var(--border-dim)]/50 rounded-lg text-xs font-medium text-[var(--text-muted)]">Sold Out</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function HomeClient({ initialProducts = [], initialSettings = {} }: { initialProducts?: Product[], initialSettings?: any }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function HomeClient({ initialProducts = [], initialSettings = {} }: { initialProducts?: Product[], initialSettings?: Record<string, any> }) {
+  const products = initialProducts;
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [banner, setBanner] = useState<{ text: string; enabled: boolean } | null>(initialSettings.banner || null);
-  const [loading, setLoading] = useState(false); // No longer loading initially
+  const loading = false;
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [settings, setSettings] = useState<any>(initialSettings);
+  const settings = initialSettings;
 
   useEffect(() => {
-    // @react-best-practices: Lazy state initialization from localStorage
-    const wl: string[] = JSON.parse(localStorage.getItem("wishlist") || "[]");
-    setWishlist(new Set(wl));
-
     // @react-best-practices: Passive scroll listener for better performance
     const handleScroll = () => setShowScrollTop(window.scrollY > 400);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Initialize wishlist from localStorage (separate effect with callback pattern)
+  useEffect(() => {
+    const wl: string[] = JSON.parse(localStorage.getItem("wishlist") || "[]");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWishlist(prev => {
+      const newSet = new Set(wl);
+      if (prev.size === newSet.size && [...prev].every(v => newSet.has(v))) return prev;
+      return newSet;
+    });
+  }, []);
+
+
+  const addToCartAction = useCartStore((state) => state.addItem);
 
   const toggleWish = (id: string) => {
     const wl = new Set(wishlist);
-    wl.has(id) ? wl.delete(id) : wl.add(id);
+    if (wl.has(id)) { wl.delete(id); } else { wl.add(id); }
     setWishlist(wl);
     localStorage.setItem("wishlist", JSON.stringify(Array.from(wl)));
     window.dispatchEvent(new Event("wishlist-updated"));
@@ -133,15 +75,12 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
   };
 
   const addToCart = (p: Product) => {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existing = cart.find((item: any) => item.productId === p._id);
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ productId: p._id, name: p.name, price: p.price, quantity: 1, imageUrl: p.imageUrls?.[0] || "" });
-    }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cart-updated"));
+    addToCartAction({
+        productId: p._id,
+        name: p.name,
+        price: p.price,
+        imageUrl: p.imageUrls?.[0] || "",
+    });
   };
 
   const categories = ["All", ...Array.from(new Set(products.map(p => p.category || "General")))];
@@ -281,7 +220,7 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
             <div className="sm:col-span-2 lg:col-span-1">
               <Link href="/" className="flex items-center gap-2 mb-4">
                 {branding.logoUrl ? (
-                  <img src={branding.logoUrl} alt={storeName} className="h-8 object-contain" />
+                  <Image src={branding.logoUrl} alt={storeName} width={160} height={32} className="h-8 w-auto object-contain" />
                 ) : (
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-sm font-bold text-white">{storeInitial}</div>
                 )}
@@ -303,7 +242,7 @@ export default function HomeClient({ initialProducts = [], initialSettings = {} 
             <div>
               <h4 className="font-semibold text-sm text-[var(--foreground)] mb-4 uppercase tracking-wider">Quick Links</h4>
               <ul className="space-y-2.5">
-                {(footer.quickLinks || [{ label: "Shop", href: "/" }, { label: "Checkout", href: "/checkout" }, { label: "Wishlist", href: "/wishlist" }]).map((l: any) => (
+                {(footer.quickLinks || [{ label: "Shop", href: "/" }, { label: "Checkout", href: "/checkout" }, { label: "Wishlist", href: "/wishlist" }]).map((l: FooterLink) => (
                   <li key={l.label}><Link href={l.href} className="text-sm text-[var(--text-muted)] hover:text-violet-500 transition-colors">{l.label}</Link></li>
                 ))}
               </ul>

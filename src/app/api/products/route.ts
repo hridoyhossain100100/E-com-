@@ -21,7 +21,8 @@ export async function GET(req: Request) {
         const limit = parseInt(searchParams.get('limit') || '0');
         const category = searchParams.get('category');
 
-        let query: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const query: Record<string, any> = {};
         if (category && category !== 'All') {
             query.category = category;
         }
@@ -78,6 +79,9 @@ export async function POST(req: Request) {
         const variants = formData.get('variants') as string;
         const descriptionSections = formData.get('descriptionSections') as string;
         const videoUrl = formData.get('videoUrl') as string;
+        const attributes = formData.get('attributes') as string;
+        const tags = formData.get('tags') as string;
+        const sku = formData.get('sku') as string;
 
         // @security-audit [xss-html-injection]: Input validation & sanitization
         if (!name || name.trim().length < 2 || name.length > 200) {
@@ -126,6 +130,7 @@ export async function POST(req: Request) {
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const uploadResult = await new Promise<any>((resolve, reject) => {
                 const uploadStream = cloudinary.uploader.upload_stream(
                     { folder: 'shopvibe_products' },
@@ -154,13 +159,16 @@ export async function POST(req: Request) {
             videoUrl: videoUrl || "",
             category: category || 'General',
             stock: parseInt(stock) || 0,
-            variants: variants ? JSON.parse(variants) : []
+            variants: variants ? JSON.parse(variants) : [],
+            attributes: attributes ? JSON.parse(attributes) : [],
+            tags: tags ? JSON.parse(tags) : [],
+            sku: sku || '',
         });
 
         const savedProduct = await product.save();
         return NextResponse.json(savedProduct, { status: 201 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to create product:', error);
         // @security-audit [sensitive-data-exposure]: Don't leak internal error details in production
         return NextResponse.json(

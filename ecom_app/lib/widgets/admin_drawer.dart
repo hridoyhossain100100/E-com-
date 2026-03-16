@@ -75,8 +75,9 @@ class AdminDrawer extends StatelessWidget {
             padding: const EdgeInsets.all(20.0),
             child: OutlinedButton.icon(
               onPressed: () async {
+                final navigator = Navigator.of(context);
                 await apiService.logout();
-                Navigator.of(context).pushReplacementNamed('/login');
+                navigator.pushReplacementNamed('/login');
               },
               icon: const Icon(Icons.logout, color: Colors.red),
               label: const Text('Logout', style: TextStyle(color: Colors.red)),
@@ -119,7 +120,7 @@ class AdminDrawer extends StatelessWidget {
           Text(
             'Administrator',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 14,
             ),
           ),
@@ -156,7 +157,7 @@ class AdminDrawer extends StatelessWidget {
         }
       },
       selected: isSelected,
-      selectedTileColor: const Color(0xFF6D28D9).withOpacity(0.05),
+      selectedTileColor: const Color(0xFF6D28D9).withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
     );

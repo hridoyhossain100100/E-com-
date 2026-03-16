@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { Metadata } from 'next';
 import ProductDetailsClient, { Product } from './client';
 import connectToDatabase from '@/lib/mongodb';

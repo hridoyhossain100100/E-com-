@@ -32,14 +32,14 @@ export default function LiveVisitorTracker() {
                     signal: controller.signal,
                     timeout: 10000, // 10 second timeout
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 // Silently ignore abort errors (expected on unmount/navigation)
-                if (axios.isCancel(err) || err?.name === 'AbortError' || err?.code === 'ERR_CANCELED') {
+                if (axios.isCancel(err) || (err instanceof Error && (err.name === 'AbortError' || ('code' in err && (err as Record<string, unknown>).code === 'ERR_CANCELED')))) {
                     return;
                 }
                 // Only log unexpected errors
                 if (isMounted) {
-                    console.warn("Live visitor ping failed:", err?.message || err);
+                    console.warn("Live visitor ping failed:", err instanceof Error ? err.message : err);
                 }
             }
         };

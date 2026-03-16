@@ -349,7 +349,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
@@ -422,9 +422,9 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.05),
+          color: Colors.orange.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.orange.withOpacity(0.2)),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [
@@ -490,7 +490,7 @@ class _AdminOrderDetailsScreenState extends State<AdminOrderDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

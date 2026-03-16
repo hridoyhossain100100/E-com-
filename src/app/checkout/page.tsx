@@ -4,8 +4,20 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import Image from "next/image";
-import { CreditCard, Phone, Hash, CheckCircle, AlertCircle, Loader2, ShoppingCart, User, Tag, MapPin, Truck, Banknote, ShieldCheck, Plus, Minus, Trash2, ChevronRight } from "lucide-react";
+import { Phone, CheckCircle, AlertCircle, Loader2, ShoppingCart, User, Tag, MapPin, Truck, ShieldCheck, Plus, Minus, Trash2, ChevronRight } from "lucide-react";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/pixel";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const checkoutSchema = z.object({
+    customerName: z.string().min(2, "Name must be at least 2 characters"),
+    customerPhone: z.string().regex(/^01[3-9]\d{8}$/, "Valid 11-digit phone number is required (01XXXXXXXXX)"),
+    selectedCity: z.string().min(1, "Please select a city"),
+    customerAddress: z.string().min(5, "Detailed address must be at least 5 characters"),
+});
+
+type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 interface Product {
     _id: string;
@@ -26,20 +38,28 @@ function CheckoutForm() {
     const [selectedProducts, setSelectedProducts] = useState<
         { productId: string; name: string; price: number; quantity: number; imageUrl: string }[]
     >([]);
-    const [customerName, setCustomerName] = useState("");
-    const [customerPhone, setCustomerPhone] = useState("");
-    const [customerAddress, setCustomerAddress] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const {
+        register,
+        handleSubmit: hookFormSubmit,
+        formState: { errors },
+    } = useForm<CheckoutFormValues>({
+        resolver: zodResolver(checkoutSchema),
+        defaultValues: {
+            customerName: "",
+            customerPhone: "",
+            customerAddress: "",
+            selectedCity: "",
+        }
+    });
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [couponCode, setCouponCode] = useState("");
     const [couponApplied, setCouponApplied] = useState<{ code: string; discountPercent: number; maxDiscount: number } | null>(null);
     const [couponLoading, setCouponLoading] = useState(false);
     const [couponError, setCouponError] = useState("");
     const [shippingZone, setShippingZone] = useState("dhaka");
-    const [shippingCost, setShippingCost] = useState(0);
-    const [shippingZones, setShippingZones] = useState([{ id: "dhaka", label: "ঢাকার ভেতরে", cost: 60 }, { id: "outside", label: "ঢাকার বাইরে", cost: 120 }]);
-    const [selectedCity, setSelectedCity] = useState("");
-    const [showDeliveryZone, setShowDeliveryZone] = useState(true);
+    const [shippingCost] = useState(0);
 
     const bdCities = [
         "ঢাকা", "চট্টগ্রাম", "খুলনা", "রাজশাহী", "সিলেট", "রংপুর", "বরিশাল", "ময়মনসিংহ",
@@ -55,15 +75,13 @@ function CheckoutForm() {
 
     useEffect(() => {
         fetchProducts();
-        axios.get(`/api/settings`).then(res => {
+        axios.get(`/api/settings`).then(() => {
         }).catch(() => { });
 
         axios.get(`/api/shipping`).then(r => {
             if (r.data.zones?.length) {
-                setShippingZones(r.data.zones);
                 setShippingZone(r.data.zones[0].id);
             }
-            if (r.data.showDeliveryZone !== undefined) setShowDeliveryZone(r.data.showDeliveryZone);
         }).catch(() => { });
     }, []);
 
@@ -88,13 +106,13 @@ function CheckoutForm() {
             const numItems = selectedProducts.reduce((sum, p) => sum + p.quantity, 0);
             trackInitiateCheckout(subtotal, numItems);
         }
-    }, [selectedProducts.length]);
+    }, [selectedProducts]);
 
     const fetchProducts = async () => {
         try {
             const res = await axios.get(`/api/products`);
             setProducts(res.data);
-        } catch (err) { }
+        } catch { }
     };
 
     const addProduct = (product: Product) => {
@@ -143,20 +161,13 @@ function CheckoutForm() {
         try {
             const r = await axios.post(`/api/coupons/validate`, { code: couponCode });
             setCouponApplied(r.data); setCouponError("");
-        } catch (err: any) { setCouponError(err.response?.data?.message || "Invalid coupon"); setCouponApplied(null); }
+        } catch (err: unknown) { const error = err as { response?: { data?: { message?: string } } }; setCouponError(error.response?.data?.message || "Invalid coupon"); setCouponApplied(null); }
         finally { setCouponLoading(false); }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const onSubmit = async (data: CheckoutFormValues) => {
         if (selectedProducts.length === 0) {
             setMessage({ type: "error", text: "Please add at least one product." });
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            return;
-        }
-        if (!customerName || !customerAddress || !selectedCity) {
-            setMessage({ type: "error", text: "Please fill all required delivery details." });
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
@@ -168,9 +179,9 @@ function CheckoutForm() {
             const res = await axios.post(`/api/orders`, {
                 products: selectedProducts.map(p => ({ productId: p.productId, quantity: p.quantity })),
                 totalAmount,
-                customerName,
-                customerPhone,
-                customerAddress: `${selectedCity}, ${customerAddress}`,
+                customerName: data.customerName,
+                customerPhone: data.customerPhone,
+                customerAddress: `${data.selectedCity}, ${data.customerAddress}`,
                 couponCode: couponApplied?.code || null,
                 discountAmount: discountAmount || 0,
                 paymentMethod: "cod",
@@ -183,11 +194,9 @@ function CheckoutForm() {
 
             setMessage({ type: "success", text: "🎉 Order Successful! We will contact you shortly." });
             setSelectedProducts([]);
-            setCustomerName("");
-            setCustomerPhone("");
-            setCustomerAddress("");
-        } catch (err: any) {
-            setMessage({ type: "error", text: err.response?.data?.message || "Failed to place order." });
+        } catch (err: unknown) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setMessage({ type: "error", text: error.response?.data?.message || "Failed to place order." });
         } finally {
             setLoading(false);
         }
@@ -216,7 +225,7 @@ function CheckoutForm() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start opacity-100 transition-opacity duration-300">
+            <form onSubmit={hookFormSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start opacity-100 transition-opacity duration-300">
 
                 {/* LEFT COLUMN: Numbered Checkout Steps */}
                 <div className="lg:col-span-7 space-y-8">
@@ -236,15 +245,17 @@ function CheckoutForm() {
                                     <label htmlFor="customerName" className="text-sm font-medium text-slate-400 ml-1">Full Name</label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        <input id="customerName" type="text" autoComplete="name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="John Doe" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400" required />
+                                        <input id="customerName" type="text" autoComplete="name" {...register("customerName")} placeholder="John Doe" className={`w-full bg-slate-800 border ${errors.customerName ? 'border-red-500/50 focus:ring-red-500/50' : 'border-slate-600 focus:border-transparent focus:ring-[#8B5CF6]'} focus:ring-2 rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400`} />
                                     </div>
+                                    {errors.customerName && <p className="text-xs text-red-400 ml-1 mt-1">{errors.customerName.message}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <label htmlFor="customerPhone" className="text-sm font-medium text-slate-400 ml-1">Phone Number</label>
                                     <div className="relative">
                                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                        <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="01XXXXXXXXX" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400" required />
+                                        <input id="customerPhone" type="tel" inputMode="tel" autoComplete="tel" {...register("customerPhone")} placeholder="01XXXXXXXXX" className={`w-full bg-slate-800 border ${errors.customerPhone ? 'border-red-500/50 focus:ring-red-500/50' : 'border-slate-600 focus:border-transparent focus:ring-[#8B5CF6]'} focus:ring-2 rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all placeholder:text-slate-400`} />
                                     </div>
+                                    {errors.customerPhone && <p className="text-xs text-red-400 ml-1 mt-1">{errors.customerPhone.message}</p>}
                                 </div>
                             </div>
 
@@ -253,18 +264,20 @@ function CheckoutForm() {
                                 <label htmlFor="selectedCity" className="text-sm font-medium text-slate-400 ml-1">City / District</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                    <select id="selectedCity" value={selectedCity} onChange={e => setSelectedCity(e.target.value)} className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all appearance-none cursor-pointer" required>
+                                    <select id="selectedCity" {...register("selectedCity")} className={`w-full bg-slate-800 border ${errors.selectedCity ? 'border-red-500/50 focus:ring-red-500/50' : 'border-slate-600 focus:border-transparent focus:ring-[#8B5CF6]'} focus:ring-2 rounded-md px-4 py-2.5 pl-10 text-white outline-none transition-all appearance-none cursor-pointer`}>
                                         <option value="" disabled>Select your district...</option>
                                         {bdCities.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                     <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none rotate-90" />
                                 </div>
+                                {errors.selectedCity && <p className="text-xs text-red-400 ml-1 mt-1">{errors.selectedCity.message}</p>}
                             </div>
 
                             {/* Address */}
                             <div className="space-y-1.5">
                                 <label htmlFor="customerAddress" className="text-sm font-medium text-slate-400 ml-1">Detailed Address (House/Road/Area)</label>
-                                <textarea id="customerAddress" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="e.g. House 12, Road 4, Block C, Banani" className="w-full bg-slate-800 border border-slate-600 focus:border-transparent focus:ring-2 focus:ring-[#8B5CF6] rounded-md px-4 py-3 text-white outline-none transition-all placeholder:text-slate-400 resize-none" rows={3} required />
+                                <textarea id="customerAddress" {...register("customerAddress")} placeholder="e.g. House 12, Road 4, Block C, Banani" className={`w-full bg-slate-800 border ${errors.customerAddress ? 'border-red-500/50 focus:ring-red-500/50' : 'border-slate-600 focus:border-transparent focus:ring-[#8B5CF6]'} focus:ring-2 rounded-md px-4 py-3 text-white outline-none transition-all placeholder:text-slate-400 resize-none`} rows={3} />
+                                {errors.customerAddress && <p className="text-xs text-red-400 ml-1 mt-1">{errors.customerAddress.message}</p>}
                             </div>
 
                             {/* Free Home Delivery Notice */}
@@ -434,7 +447,7 @@ function CheckoutForm() {
 
                             <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">Order Confirmed!</h2>
                             <p className="text-gray-400 mb-8 text-base leading-relaxed">
-                                Thank you for your purchase. We've received your order and will contact you shortly to confirm delivery details.
+                                Thank you for your purchase. We&apos;ve received your order and will contact you shortly to confirm delivery details.
                             </p>
 
                             <button

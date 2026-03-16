@@ -13,7 +13,7 @@ export async function GET() {
         // Quick DB connection check to wake up the serverless function
         await connectToDatabase();
         return NextResponse.json({ isAuthenticated: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ message: 'Database connection failed' }, { status: 500 });
     }
 }

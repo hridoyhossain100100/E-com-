@@ -11,6 +11,7 @@ export async function GET(
         const { productId } = await params;
 
         const reviews = await Review.find({ productId }).sort({ createdAt: -1 });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const avg = reviews.length > 0 ? reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length : 0;
 
         return NextResponse.json({
@@ -19,8 +20,8 @@ export async function GET(
             totalReviews: reviews.length
         });
 
-    } catch (error: any) {
-        return NextResponse.json({ message: 'Failed to fetch reviews', error: error?.message }, { status: 500 });
+    } catch (error: unknown) {
+        return NextResponse.json({ message: 'Failed to fetch reviews', error: (error instanceof Error ? error.message : String(error)) }, { status: 500 });
     }
 }
 
@@ -48,7 +49,7 @@ export async function POST(
         await review.save();
         return NextResponse.json(review, { status: 201 });
 
-    } catch (error: any) {
-        return NextResponse.json({ message: 'Failed to add review', error: error?.message }, { status: 500 });
+    } catch (error: unknown) {
+        return NextResponse.json({ message: 'Failed to add review', error: (error instanceof Error ? error.message : String(error)) }, { status: 500 });
     }
 }

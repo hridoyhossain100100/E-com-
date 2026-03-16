@@ -90,8 +90,8 @@ export async function POST(req: Request) {
         // ─── 4. Unhandled Events ───────────────────────────────────────────────
         return NextResponse.json({ message: 'Event ignored' }, { status: 200 });
 
-    } catch (error: any) {
-        console.error('[Pathao Webhook] Terminal Error:', error.message);
+    } catch (error: unknown) {
+        console.error('[Pathao Webhook] Terminal Error:', (error instanceof Error ? error.message : String(error)));
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }

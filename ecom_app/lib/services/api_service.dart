@@ -81,7 +81,7 @@ class ApiService {
         throw Exception('Failed to load products');
       }
     } catch (e) {
-      print('Error fetching products: $e');
+      debugPrint('Error fetching products: $e');
       rethrow;
     }
   }
@@ -100,7 +100,7 @@ class ApiService {
         throw Exception('Failed to load product');
       }
     } catch (e) {
-      print('Error fetching product: $e');
+      debugPrint('Error fetching product: $e');
       rethrow;
     }
   }
@@ -120,7 +120,7 @@ class ApiService {
         throw Exception(error['message'] ?? 'Failed to place order');
       }
     } catch (e) {
-      print('Error placing order: $e');
+      debugPrint('Error placing order: $e');
       rethrow;
     }
   }
@@ -174,7 +174,7 @@ class ApiService {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      print('Login error: $e');
+      debugPrint('Login error: $e');
       rethrow;
     }
   }
@@ -210,7 +210,7 @@ class ApiService {
         throw Exception('Failed to load dashboard stats');
       }
     } catch (e) {
-      print('Error fetching stats: $e');
+      debugPrint('Error fetching stats: $e');
       rethrow;
     }
   }
@@ -230,7 +230,7 @@ class ApiService {
         throw Exception('Failed to load chart data');
       }
     } catch (e) {
-      print('Error fetching chart data: $e');
+      debugPrint('Error fetching chart data: $e');
       rethrow;
     }
   }
@@ -251,7 +251,7 @@ class ApiService {
         throw Exception('Failed to load orders');
       }
     } catch (e) {
-      print('Error fetching orders: $e');
+      debugPrint('Error fetching orders: $e');
       rethrow;
     }
   }
@@ -271,7 +271,7 @@ class ApiService {
         throw Exception('Failed to load order');
       }
     } catch (e) {
-      print('Error fetching order: $e');
+      debugPrint('Error fetching order: $e');
       rethrow;
     }
   }
@@ -290,7 +290,7 @@ class ApiService {
         throw Exception(error['message'] ?? 'Failed to update status');
       }
     } catch (e) {
-      print('Error updating status: $e');
+      debugPrint('Error updating status: $e');
       rethrow;
     }
   }
@@ -314,7 +314,7 @@ class ApiService {
         throw Exception(data['error'] ?? 'Failed to send to Pathao');
       }
     } catch (e) {
-      print('Pathao error: $e');
+      debugPrint('Pathao error: $e');
       rethrow;
     }
   }
@@ -332,7 +332,7 @@ class ApiService {
         throw Exception(error['message'] ?? 'Failed to delete product');
       }
     } catch (e) {
-      print('Error deleting product: $e');
+      debugPrint('Error deleting product: $e');
       rethrow;
     }
   }
@@ -351,7 +351,7 @@ class ApiService {
         throw Exception(error['message'] ?? 'Failed to update product');
       }
     } catch (e) {
-      print('Error updating product: $e');
+      debugPrint('Error updating product: $e');
       rethrow;
     }
   }
@@ -394,7 +394,7 @@ class ApiService {
         throw Exception(error['message'] ?? 'Failed to create product');
       }
     } catch (e) {
-      print('Error creating product: $e');
+      debugPrint('Error creating product: $e');
       rethrow;
     }
   }
@@ -477,22 +477,22 @@ class ApiService {
   Future<void> saveFcmToken(String token) async {
     try {
       if (kDebugMode) {
-        print('FCM_DEBUG: Attempting to save token to $baseUrl/admin/save-token');
+        debugPrint('FCM_DEBUG: Attempting to save token to $baseUrl/admin/save-token');
       }
       final response = await _post('/admin/save-token', {'token': token});
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          print('FCM_DEBUG: Token saved successfully to backend');
+          debugPrint('FCM_DEBUG: Token saved successfully to backend');
         }
       } else {
         if (kDebugMode) {
-          print('FCM_DEBUG: Failed to save token. Status: ${response.statusCode}, Body: ${response.body}');
+          debugPrint('FCM_DEBUG: Failed to save token. Status: ${response.statusCode}, Body: ${response.body}');
         }
         throw Exception('Failed to save FCM token');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('FCM_DEBUG: Exception in saveFcmToken: $e');
+        debugPrint('FCM_DEBUG: Exception in saveFcmToken: $e');
       }
     }
   }

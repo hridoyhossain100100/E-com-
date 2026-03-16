@@ -14,16 +14,15 @@ export default async function HomePage() {
     Settings.find({}).lean()
   ]);
 
-  // Transform MongoDB _id objects to strings for Client Component serialization
-  const products = productsRaw.map(p => ({
-    ...p,
-    _id: p._id.toString(),
-    createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
-    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString()
-  }));
+  // Deep-serialize all Mongoose documents to plain objects
+  // JSON round-trip strips ObjectIds, Buffers, and toJSON methods from subdocuments (variants, attributes, etc.)
+  const products = JSON.parse(JSON.stringify(productsRaw));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const initialSettings: Record<string, any> = {};
-  allSettings.forEach((s: any) => { initialSettings[s.key] = s.value; });
+  const settingsPlain = JSON.parse(JSON.stringify(allSettings));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  settingsPlain.forEach((s: any) => { initialSettings[s.key] = s.value; });
 
   return (
     <HomeClient initialProducts={products} initialSettings={initialSettings} />

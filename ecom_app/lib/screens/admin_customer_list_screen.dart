@@ -142,7 +142,7 @@ class _AdminCustomerListScreenState extends State<AdminCustomerListScreen> {
                           color: const Color(0xFF161925),
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.05),
+                            color: Colors.white.withValues(alpha: 0.05),
                           ),
                         ),
                         child: ListTile(
@@ -150,7 +150,7 @@ class _AdminCustomerListScreenState extends State<AdminCustomerListScreen> {
                           leading: CircleAvatar(
                             backgroundColor: const Color(
                               0xFFFF6B2C,
-                            ).withOpacity(0.1),
+                            ).withValues(alpha: 0.1),
                             child: Text(
                               customer['name'][0].toUpperCase(),
                               style: const TextStyle(

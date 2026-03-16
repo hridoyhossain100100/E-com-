@@ -22,9 +22,9 @@ export async function POST(
             return NextResponse.json(result, { status: 400 });
         }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { success: false, error: error?.message || 'Failed to send to Pathao' },
+            { success: false, error: (error instanceof Error ? error.message : String(error)) || 'Failed to send to Pathao' },
             { status: 500 }
         );
     }

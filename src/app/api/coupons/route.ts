@@ -12,9 +12,9 @@ export async function GET() {
         const coupons = await Coupon.find().sort({ createdAt: -1 });
 
         return NextResponse.json(coupons);
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch coupons', error: error?.message },
+            { message: 'Failed to fetch coupons', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }
@@ -45,12 +45,14 @@ export async function POST(req: Request) {
         const saved = await coupon.save();
         return NextResponse.json(saved, { status: 201 });
 
-    } catch (error: any) {
-        if (error.code === 11000) {
+    } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err = error as any;
+        if (err.code === 11000) {
             return NextResponse.json({ message: 'Coupon code already exists' }, { status: 400 });
         }
         return NextResponse.json(
-            { message: 'Failed to create coupon', error: error?.message },
+            { message: 'Failed to create coupon', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

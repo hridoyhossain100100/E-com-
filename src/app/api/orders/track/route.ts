@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json(orders);
-    } catch (error: any) {
-        return NextResponse.json({ message: error.message || 'Server error' }, { status: 500 });
+    } catch (error: unknown) {
+        return NextResponse.json({ message: (error instanceof Error ? error.message : String(error)) || 'Server error' }, { status: 500 });
     }
 }

@@ -46,9 +46,9 @@ export async function GET() {
 
         return NextResponse.json(chartData);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch daily revenue', error: error?.message },
+            { message: 'Failed to fetch daily revenue', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

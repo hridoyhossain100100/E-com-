@@ -51,7 +51,8 @@ export async function PUT(
         const body = await request.json();
         const { name, price, description, descriptionSections, category, stock, variants, imageUrls, videoUrl } = body;
 
-        const updateData: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const updateData: Record<string, any> = {};
         if (name !== undefined) updateData.name = name;
         if (price !== undefined) updateData.price = parseFloat(price);
         if (description !== undefined) updateData.description = description;
@@ -69,7 +70,7 @@ export async function PUT(
         }
 
         return NextResponse.json(product);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to update product:', error);
         // @security-audit [sensitive-data-exposure]: Don't leak internal error details
         return NextResponse.json(
@@ -102,9 +103,9 @@ export async function DELETE(
         }
 
         return NextResponse.json({ message: 'Product deleted' });
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to delete product', error: error?.message },
+            { message: 'Failed to delete product', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

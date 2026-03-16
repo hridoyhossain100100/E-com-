@@ -22,9 +22,9 @@ export async function GET() {
             { name: 'In Progress', value: total - delivered - cancelled }
         ]);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch completion rate', error: error?.message },
+            { message: 'Failed to fetch completion rate', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

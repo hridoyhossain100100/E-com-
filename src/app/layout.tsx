@@ -20,7 +20,9 @@ async function getSettings() {
   try {
     await connectToDatabase();
     const allSettings = await Settings.find({});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: Record<string, any> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     allSettings.forEach((s: any) => { result[s.key] = s.value; });
     return result;
   } catch {

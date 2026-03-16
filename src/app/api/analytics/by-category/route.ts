@@ -29,9 +29,9 @@ export async function GET() {
         const data = Object.keys(catMap).map(k => ({ name: k, value: catMap[k] }));
         return NextResponse.json(data);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch category analytics', error: error?.message },
+            { message: 'Failed to fetch category analytics', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

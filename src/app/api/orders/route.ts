@@ -5,6 +5,54 @@ import Product from '@/models/Product';
 import Coupon from '@/models/Coupon';
 import axios from 'axios';
 import { sendPushNotification } from '@/lib/pushNotification';
+import { z } from 'zod';
+
+// --- SECURITY LAYERS ---
+
+// 1. Zod Validation
+const orderSchema = z.object({
+    customerName: z.string().min(2, 'Valid customer name is required (min 2 chars)'),
+    customerPhone: z.string().regex(/^01[3-9]\d{8}$/, 'Valid Bangladesh phone number is required (01XXXXXXXXX)'),
+    customerAddress: z.string().min(5, 'Valid delivery address is required (min 5 chars)'),
+    products: z.array(z.any()).min(1, 'Cart is empty'),
+    couponCode: z.string().optional().nullable(),
+    discountAmount: z.number().optional().nullable(),
+    paymentMethod: z.string().optional().nullable(),
+    shippingZone: z.string().optional().nullable(),
+    shippingCost: z.number().optional().nullable(),
+    draftOrderId: z.string().optional().nullable()
+}).passthrough();
+
+// 2. IP-Based Rate Limiting (In-memory)
+// Max 3 requests per day (24 hours) per IP
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 3;
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip);
+
+    if (!record) {
+        rateLimitMap.set(ip, { count: 1, windowStart: now });
+        return false;
+    }
+
+    if (now - record.windowStart > RATE_LIMIT_WINDOW_MS) {
+        // Reset window
+        rateLimitMap.set(ip, { count: 1, windowStart: now });
+        return false;
+    }
+
+    if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+        return true;
+    }
+
+    record.count += 1;
+    return false;
+}
+
+// --- END SECURITY LAYERS ---
 
 // Atomic order number generation using findOneAndUpdate to prevent race conditions
 const generateOrderNumber = async () => {
@@ -21,8 +69,25 @@ const generateOrderNumber = async () => {
 
 export async function POST(req: Request) {
     try {
+        // Apply Rate Limiting
+        const forwardedFor = req.headers.get('x-forwarded-for');
+        const realIp = req.headers.get('x-real-ip');
+        const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIp || 'unknown');
+        
+        if (ip !== 'unknown' && isRateLimited(ip)) {
+            return NextResponse.json({ message: 'Too many order requests. Maximum 3 requests per day.' }, { status: 429 });
+        }
+
         await connectToDatabase();
         const body = await req.json();
+
+        // Apply Zod Validation
+        const validationResult = orderSchema.safeParse(body);
+        if (!validationResult.success) {
+            // Return first error message
+            const errorMessage = validationResult.error.issues[0]?.message || 'Invalid input data';
+            return NextResponse.json({ message: errorMessage }, { status: 400 });
+        }
 
         const {
             products, // Array of { productId, quantity }
@@ -81,7 +146,10 @@ export async function POST(req: Request) {
                 productId: product._id,
                 name: product.name,
                 price: product.price,
-                quantity: item.quantity
+                quantity: item.quantity,
+                // Snapshot at order time — immune to future product edits
+                productImage: product.imageUrls?.[0] || '',
+                category: product.category || ''
             });
         }
 
@@ -227,10 +295,11 @@ export async function GET(req: Request) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
 
-        let query: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const query: Record<string, any> = {};
 
         if (search) {
-            const orConditions: any[] = [
+            const orConditions: Record<string, unknown>[] = [
                 { customerName: { $regex: search, $options: 'i' } },
                 { customerPhone: { $regex: search, $options: 'i' } }
             ];
@@ -260,10 +329,10 @@ export async function GET(req: Request) {
             currentPage: page
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to fetch orders:', error);
         return NextResponse.json(
-            { message: 'Internal Server Error', error: error?.message },
+            { message: 'Internal Server Error', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

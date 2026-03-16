@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
         );
 
         return NextResponse.json({ success: true, message: 'FCM token saved successfully' });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error saving FCM token:', error);
-        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error instanceof Error ? error.message : String(error)) }, { status: 500 });
     }
 }

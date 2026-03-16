@@ -13,7 +13,8 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const statusMode = searchParams.get('status');
 
-        let query: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const query: Record<string, any> = {};
         if (statusMode && statusMode !== 'all') {
             query.status = statusMode;
         }
@@ -21,11 +22,13 @@ export async function GET(req: Request) {
         const orders = await Order.find(query).sort({ createdAt: -1 });
 
         let csvData = 'Order ID,Date,Customer Name,Phone,Address,Items,Total,Status,Payment\n';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         orders.forEach((o: any) => {
             const date = o.createdAt.toISOString().split('T')[0];
             const name = `"${parseFloat(o.customerName) ? '_' : ''}${o.customerName.replace(/"/g, '""')}"`;
             const phone = `"${o.customerPhone}"`;
             const addr = `"${o.customerAddress.replace(/"/g, '""')}"`;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const items = `"${o.products.map((p: any) => `${p.quantity}x ${p.name}`).join(' | ').replace(/"/g, '""')}"`;
             csvData += `${o.orderNumber},${date},${name},${phone},${addr},${items},${o.totalAmount},${o.status},${o.paymentMethod}\n`;
         });
@@ -38,9 +41,9 @@ export async function GET(req: Request) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to export CSV', error: error?.message },
+            { message: 'Failed to export CSV', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

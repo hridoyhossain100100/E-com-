@@ -29,9 +29,9 @@ export async function PUT(
 
         return NextResponse.json(setting);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to update setting', error: error?.message },
+            { message: 'Failed to update setting', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

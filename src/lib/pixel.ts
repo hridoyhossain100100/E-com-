@@ -1,6 +1,10 @@
-export const fbq = (...args: any[]) => {
-    if (typeof window !== 'undefined' && (window as any).fbq) {
-        (window as any).fbq(...args);
+interface WindowWithFbq extends Window {
+    fbq?: (...args: unknown[]) => void;
+}
+
+export const fbq = (...args: unknown[]) => {
+    if (typeof window !== 'undefined' && (window as WindowWithFbq).fbq) {
+        (window as WindowWithFbq).fbq!(...args);
     }
 };
 

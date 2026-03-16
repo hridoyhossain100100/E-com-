@@ -1,0 +1,309 @@
+﻿
+> client@0.1.0 lint
+> eslint
+
+node.exe : [BABEL] Note: The code 
+generator has deoptimised the 
+styling of C:\SCR\e-com site\client
+\.next\dev\server\chunks\1e749_next
+_47e69237._.js as it exceeds the 
+max of 500KB.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : NotS 
+   pecified: ([BABEL] Note: T...e  
+   max of 500KB.:String) [], Rem   
+ oteException
+    + FullyQualifiedErrorId : Nati 
+   veCommandError
+ 
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\1e749_lodash_46219f69
+._.js as it exceeds the max of 
+500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\node_modules_f83cb80d
+._.js as it exceeds the max of 
+500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\node_modules_lodash_9
+f355569._.js as it exceeds the max 
+of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\node_modules_next_8ac
+7a050._.js as it exceeds the max 
+of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\node_modules_next_bb9
+1d29a._.js as it exceeds the max 
+of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\1e749_next_dist_4
+c53b6b5._.js as it exceeds the max 
+of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\1e749_a4fde503._.
+js as it exceeds the max of 500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\1e749_a4fde503._.
+js at line 13479.
+(Use `node --trace-warnings ...` 
+to show where the warning was 
+created)
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\client_src_app_5f
+f1d943._.js as it exceeds the max 
+of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\1e749_1c60c443._.
+js as it exceeds the max of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_632a
+4116._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_632a
+4116._.js at line 4806.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_b2e6
+e7ed._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_b2e6
+e7ed._.js at line 4806.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_ae9c
+03fc._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_ae9c
+03fc._.js at line 13479.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_b8bf
+5e67._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_b8bf
+5e67._.js at line 6798.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_bd73
+c809._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_bd73
+c809._.js at line 13479.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_next
+_dist_3e1f69b5._.js as it exceeds 
+the max of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\src_app_17181e9e.
+_.js as it exceeds the max of 
+500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\src_app_admin_pag
+e_tsx_645532da._.js as it exceeds 
+the max of 500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\[root-of-the-server]_
+_22cf5e9b._.js at line 2725.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\[root-of-the-serv
+er]__b0616d86._.js as it exceeds 
+the max of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\[root-of-the-server]_
+_094b01d9._.js as it exceeds the 
+max of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\[root-of-the-server]_
+_0ee228de._.js as it exceeds the 
+max of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\[root-of-the-server]_
+_1d985467._.js as it exceeds the 
+max of 500KB.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_4f0a
+6bb3._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_4f0a
+6bb3._.js at line 4835.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_532a
+2caf._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_532a
+2caf._.js at line 13479.
+[BABEL] Note: The code generator 
+has deoptimised the styling of 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_69f5
+bf7c._.js as it exceeds the max of 
+500KB.
+(node:20948) ESLintEnvWarning: /* 
+eslint-env */ comments are no 
+longer recognized when linting 
+with flat config and will be 
+reported as errors as of v10.0.0. 
+Replace them with /* global */ 
+comments or define globals in your 
+config file. See https://eslint.org
+/docs/latest/use/configure/migratio
+n-guide#eslint-env-configuration-co
+mments for details. Found in 
+C:\SCR\e-com site\client\.next\dev\
+server\chunks\ssr\node_modules_69f5
+bf7c._.js at line 4806.

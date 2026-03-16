@@ -25,7 +25,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   late TextEditingController _categoryController;
 
   List<String> _existingImageUrls = [];
-  List<XFile> _newImages = [];
+  final List<XFile> _newImages = [];
   bool _isSaving = false;
 
   @override
@@ -130,18 +130,23 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         await _apiService.updateProduct(widget.product!.id, data);
       }
 
+      if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.product == null ? 'Product created!' : 'Product updated!',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.product == null ? 'Product created!' : 'Product updated!',
+            ),
           ),
-        ),
-      );
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       setState(() => _isSaving = false);
     }

@@ -272,7 +272,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF161925),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -283,7 +283,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 20),

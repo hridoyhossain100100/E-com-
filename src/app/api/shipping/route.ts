@@ -22,7 +22,7 @@ export async function GET() {
         const showDeliveryZone = dzSetting ? dzSetting.value : true;
 
         return NextResponse.json({ zones, showDeliveryZone });
-    } catch (error: any) {
+    } catch {
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }

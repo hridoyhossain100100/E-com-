@@ -30,15 +30,15 @@ class NotificationService {
     // 1. Basic connectivity test
     try {
       if (kDebugMode) {
-        print("FCM_DEBUG: Starting connectivity test to ${ApiService.baseUrl}/test-connection");
+        debugPrint("FCM_DEBUG: Starting connectivity test to ${ApiService.baseUrl}/test-connection");
       }
       final testRes = await http.get(Uri.parse('${ApiService.baseUrl}/test-connection'));
       if (kDebugMode) {
-        print("FCM_DEBUG: Connectivity test result: ${testRes.statusCode} - ${testRes.body}");
+        debugPrint("FCM_DEBUG: Connectivity test result: ${testRes.statusCode} - ${testRes.body}");
       }
     } catch (e) {
       if (kDebugMode) {
-        print("FCM_DEBUG: Connectivity test failed: $e");
+        debugPrint("FCM_DEBUG: Connectivity test failed: $e");
       }
     }
 
@@ -74,7 +74,7 @@ class NotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       if (kDebugMode) {
-        print('User granted permission');
+        debugPrint('User granted permission');
       }
     }
 
@@ -85,7 +85,7 @@ class NotificationService {
     String? token = await _fcm.getToken();
     if (token != null) {
       if (kDebugMode) {
-        print("FCM_DEBUG: Initial FCM Token found: $token");
+        debugPrint("FCM_DEBUG: Initial FCM Token found: $token");
       }
       await ApiService().saveFcmToken(token);
     }
@@ -93,7 +93,7 @@ class NotificationService {
     // 7. Handle token refresh
     _fcm.onTokenRefresh.listen((newToken) async {
       if (kDebugMode) {
-        print("FCM Token Refreshed: $newToken");
+        debugPrint("FCM Token Refreshed: $newToken");
       }
       await ApiService().saveFcmToken(newToken);
     });
@@ -128,7 +128,7 @@ class NotificationService {
     // 9. Handle background clicks
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       if (kDebugMode) {
-        print("App opened from notification: ${message.notification?.title}");
+        debugPrint("App opened from notification: ${message.notification?.title}");
       }
       _handleNotificationTap(message.data);
     });
@@ -161,7 +161,7 @@ class NotificationService {
   static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp();
     if (kDebugMode) {
-      print("Handling a background message: ${message.messageId}");
+      debugPrint("Handling a background message: ${message.messageId}");
     }
   }
 }

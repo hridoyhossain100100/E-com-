@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @next/next/no-img-element, @typescript-eslint/no-unused-expressions */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
@@ -182,6 +183,7 @@ export default function AdminPage() {
     // Live visitor counter
     const [liveVisitors, setLiveVisitors] = useState(0);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { checkAuth(); }, []);
     useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); } }, [toast]);
 

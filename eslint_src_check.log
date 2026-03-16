@@ -1,0 +1,49 @@
+﻿node.exe : (node:8972) 
+ESLintIgnoreWarning: The 
+".eslintignore" file is no longer 
+supported. Switch to using the 
+"ignores" property in 
+"eslint.config.js": https://eslint.
+org/docs/latest/use/configure/migra
+tion-guide#ignoring-files
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : NotS 
+   pecified: ((node:8972) ESL...#  
+  ignoring-files:String) [], Rem   
+ oteException
+    + FullyQualifiedErrorId : Nati 
+   veCommandError
+ 
+(Use `node --trace-warnings ...` 
+to show where the warning was 
+created)
+
+C:\SCR\e-com site\src\app\HomeClient.tsx
+  6:18  warning  'Heart' is defined but never used   @typescript-eslint/no-unused-vars
+  6:25  warning  'Share2' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\SCR\e-com site\src\app\api\test-notification\route.ts
+  58:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  66:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\SCR\e-com site\src\app\checkout\page.tsx
+    7:10   warning  'CreditCard' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+    7:29   warning  'Hash' is defined but never used                                                                                     @typescript-eslint/no-unused-vars
+    7:110  warning  'Banknote' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+   62:26   warning  'setShippingCost' is assigned a value but never used                                                                 @typescript-eslint/no-unused-vars
+   63:12   warning  'shippingZones' is assigned a value but never used                                                                   @typescript-eslint/no-unused-vars
+   64:12   warning  'showDeliveryZone' is assigned a value but never used                                                                @typescript-eslint/no-unused-vars
+  113:8    warning  React Hook useEffect has a missing dependency: 'selectedProducts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\SCR\e-com site\src\models\Product.ts
+  158:9  warning  Unused eslint-disable directive (no problems were reported from 'no-constant-condition')
+
+Γ£û 12 problems (2 errors, 10 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

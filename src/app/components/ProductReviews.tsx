@@ -4,8 +4,16 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Star, MessageSquareQuote, Loader2, User } from "lucide-react";
 
+interface Review {
+    _id: string;
+    customerName: string;
+    rating: number;
+    comment?: string;
+    createdAt: string;
+}
+
 export default function ProductReviews({ productId }: { productId: string }) {
-    const [reviews, setReviews] = useState<any[]>([]);
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [avg, setAvg] = useState(0);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -41,8 +49,10 @@ export default function ProductReviews({ productId }: { productId: string }) {
             setMsg("Review submitted successfully! Thank you 🙌");
             setName(""); setComment(""); setRating(5);
             fetchReviews();
-        } catch (err: any) {
-            setMsg(err.response?.data?.message || "Failed to submit review.");
+        } catch (err: unknown) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const axiosErr = err as any;
+            setMsg(axiosErr?.response?.data?.message || "Failed to submit review.");
         } finally {
             setSubmitting(false);
             setTimeout(() => setMsg(""), 5000);

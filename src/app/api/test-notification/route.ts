@@ -45,7 +45,7 @@ export async function GET() {
             response, 
             debugInfo 
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Test Notification Error:', error);
         
         const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
@@ -54,8 +54,8 @@ export async function GET() {
 
         return NextResponse.json({ 
             success: false, 
-            message: error.message, 
-            code: error.code,
+            message: (error instanceof Error ? error.message : String(error)), 
+            code: (error as { code?: string }).code,
             debug: {
                 privateKeyLength: privateKeyRaw?.length,
                 privateKeyPrefix: rawPrefix,
@@ -63,7 +63,7 @@ export async function GET() {
                 hasNewlineLiteral: privateKeyRaw?.includes('\\n'),
                 hasActualNewline: privateKeyRaw?.includes('\n'),
             },
-            stack: error.stack 
+            stack: (error as { stack?: string }).stack 
         }, { status: 500 });
     }
 }

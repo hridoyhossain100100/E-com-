@@ -31,9 +31,9 @@ export async function GET(
             date: order.createdAt.toLocaleDateString()
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to generate invoice', error: error?.message },
+            { message: 'Failed to generate invoice', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

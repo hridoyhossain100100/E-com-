@@ -30,9 +30,11 @@ class _AdminReviewListScreenState extends State<AdminReviewListScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading reviews: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading reviews: $e')));
+      }
       setState(() => _isLoading = false);
     }
   }
@@ -61,9 +63,11 @@ class _AdminReviewListScreenState extends State<AdminReviewListScreen> {
         await _apiService.deleteAdminReview(id);
         _loadReviews();
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting review: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting review: $e')));
+        }
       }
     }
   }
@@ -89,7 +93,7 @@ class _AdminReviewListScreenState extends State<AdminReviewListScreen> {
                   Icon(
                     Icons.star_outline,
                     size: 64,
-                    color: Colors.grey.withOpacity(0.5),
+                    color: Colors.grey.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -117,10 +121,10 @@ class _AdminReviewListScreenState extends State<AdminReviewListScreen> {
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E2E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

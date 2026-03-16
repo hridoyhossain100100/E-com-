@@ -81,7 +81,7 @@ export async function POST(req: Request) {
             { message: 'Invalid credentials', attemptsRemaining: Math.max(0, remaining) },
             { status: 401 }
         );
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Login error:', error);
         // @security-audit: Don't leak error details to client
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

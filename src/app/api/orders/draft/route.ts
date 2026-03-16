@@ -40,7 +40,10 @@ export async function POST(req: Request) {
                         productId: product._id,
                         name: product.name,
                         price: product.price,
-                        quantity: item.quantity || 1
+                        quantity: item.quantity || 1,
+                        // Snapshot at order time — immune to future product edits
+                        productImage: product.imageUrls?.[0] || '',
+                        category: product.category || ''
                     });
                 }
             }

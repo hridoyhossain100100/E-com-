@@ -13,6 +13,15 @@ const orderSchema = new mongoose.Schema({
             quantity: {
                 type: Number,
                 default: 1
+            },
+            // ── Snapshot fields (captured at order time) ──
+            productImage: {
+                type: String,
+                default: ''
+            },
+            category: {
+                type: String,
+                default: ''
             }
         }
     ],

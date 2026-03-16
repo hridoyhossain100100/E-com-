@@ -20,9 +20,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ message: `${result.deletedCount} products deleted` });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to bulk delete products', error: error?.message },
+            { message: 'Failed to bulk delete products', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }

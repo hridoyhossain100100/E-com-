@@ -26,9 +26,9 @@ export async function GET() {
             { name: 'Repeat', value: repeat }
         ]);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         return NextResponse.json(
-            { message: 'Failed to fetch repeat customers', error: error?.message },
+            { message: 'Failed to fetch repeat customers', error: (error instanceof Error ? error.message : String(error)) },
             { status: 500 }
         );
     }
